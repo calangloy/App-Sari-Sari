@@ -271,8 +271,8 @@ export default function App() {
         )}
 
         <div className={cn(
-          "max-w-7xl mx-auto w-full",
-          !isCashier ? "p-6 min-h-[calc(100vh-64px)]" : "h-screen"
+          "w-full",
+          !isCashier ? "max-w-7xl mx-auto p-6 min-h-[calc(100vh-64px)]" : "h-screen"
         )}>
           <AnimatePresence mode="wait">
             <motion.div

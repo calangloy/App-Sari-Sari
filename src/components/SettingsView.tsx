@@ -45,7 +45,8 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
       phone: formData.get('phone') as string,
       logoUrl: formData.get('logoUrl') as string,
       taxRate: Number(formData.get('taxRate')),
-      receiptFootnote: formData.get('receiptFootnote') as string
+      receiptFootnote: formData.get('receiptFootnote') as string,
+      managerPin: formData.get('managerPin') as string
     };
     try {
       await dbService.set('settings', 'store', updated);
@@ -355,12 +356,16 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
         <div className="p-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Store Manager PIN</label>
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Global Manager PIN</label>
               <input 
+                name="managerPin"
                 type="password" 
-                defaultValue="••••"
+                maxLength={6}
+                placeholder="4-6 Digits"
+                defaultValue={storeSettings.managerPin || '1234'}
                 className="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl text-lg font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <p className="text-[10px] text-slate-500 font-bold uppercase italic">This PIN is required for Cashier Overrides (e.g. Cart Reset)</p>
             </div>
             <div className="space-y-3">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Auto-Logout Timer</label>
