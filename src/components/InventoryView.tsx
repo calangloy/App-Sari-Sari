@@ -1,0 +1,108 @@
+import { useState } from 'react';
+import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, Loader2 } from 'lucide-react';
+import { Product } from '../types';
+import { formatCurrency, cn } from '../lib/utils';
+import { useCollection, dbService } from '../lib/db';
+import { orderBy } from 'firebase/firestore';
+
+export const InventoryView = () => {
+  const { data: products, loading } = useCollection<Product>('products', orderBy('name'));
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    p.barcode.includes(searchTerm)
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="animate-spin text-blue-500" size={32} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search products by name or barcode..."
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <button className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider">
+          <Plus size={18} />
+          <span>Add New Product</span>
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Product Details</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Barcode</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Availability</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Manage</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredProducts.map((product) => (
+                <tr key={product.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="font-bold text-slate-900">{product.name}</div>
+                  </td>
+                  <td className="px-6 py-4 text-xs font-mono text-slate-500">{product.barcode}</td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-600 tracking-wider">
+                      {product.category}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-xs">
+                      <span className="text-slate-400 mr-1 uppercase font-bold tracking-tighter">Cost:</span>
+                      <span className="text-slate-600 font-medium">{formatCurrency(product.costPrice)}</span>
+                    </div>
+                    <div className="text-sm font-black mt-0.5">
+                      <span className="text-slate-400 mr-1 uppercase font-bold tracking-tighter">Selling:</span>
+                      <span className="text-blue-600">{formatCurrency(product.sellingPrice)}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className={cn(
+                      "text-sm font-black",
+                      product.stockLevel <= 5 ? "text-red-600" : "text-slate-900"
+                    )}>
+                      {product.stockLevel} UNITS
+                    </div>
+                    {product.stockLevel <= 5 && (
+                      <span className="text-[9px] text-red-500 uppercase font-black tracking-widest block mt-0.5">CRITICAL LOW</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center gap-1">
+                      <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                        <Edit2 size={16} />
+                      </button>
+                      <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};

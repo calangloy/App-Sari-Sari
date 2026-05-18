@@ -1,0 +1,10 @@
+{
+  "name": "Sari-Sari Store POS",
+  "description": "A comprehensive point-of-sale system for small businesses with inventory, sales tracking, and supplier management.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

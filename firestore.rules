@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Products
+    match /products/{productId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(productId) && isValidProduct(incoming());
+      allow update: if isSignedIn() && isValidId(productId) && isValidProduct(incoming())
+                    && (
+                      // Action: Stock Update
+                      (incoming().diff(existing()).affectedKeys().hasOnly(['stockLevel', 'updatedAt'])) ||
+                      // Action: Price/Info Update
+                      (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'costPrice', 'sellingPrice', 'category', 'supplierId', 'updatedAt']))
+                    )
+                    && (incoming().barcode == existing().barcode); // Barcode is immutable
+      allow delete: if isSignedIn();
+
+      function isValidProduct(p) {
+        return p.keys().hasAll(['name', 'barcode', 'costPrice', 'sellingPrice', 'stockLevel', 'category', 'supplierId', 'updatedAt'])
+               && p.keys().size() == 8
+               && p.name is string && p.name.size() > 0 && p.name.size() <= 200
+               && p.barcode is string && p.barcode.size() <= 64
+               && p.costPrice is number && p.costPrice >= 0
+               && p.sellingPrice is number && p.sellingPrice >= 0
+               && p.stockLevel is number
+               && p.category is string && p.category.size() <= 100
+               && p.supplierId is string && p.supplierId.size() <= 128
+               && p.updatedAt == request.time;
+      }
+    }
+
+    // Sales
+    match /sales/{saleId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(saleId) && isValidSale(incoming());
+      
+      function isValidSale(s) {
+        return s.keys().hasAll(['items', 'total', 'paymentMethod', 'timestamp'])
+               && s.keys().size() >= 4
+               && s.items is list && s.items.size() > 0 && s.items.size() <= 50
+               && s.total is number && s.total >= 0
+               && s.paymentMethod in ['cash', 'card', 'e-wallet']
+               && s.timestamp == request.time;
+      }
+    }
+
+    // Customers
+    match /customers/{customerId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(customerId) && isValidCustomer(incoming());
+      allow update: if isSignedIn() && isValidId(customerId) && isValidCustomer(incoming())
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'points', 'totalSpent']);
+
+      function isValidCustomer(c) {
+        return c.keys().hasAll(['name', 'phone', 'points', 'totalSpent'])
+               && c.name is string && c.name.size() > 0 && c.name.size() <= 100
+               && (c.phone == null || (c.phone is string && c.phone.size() <= 20))
+               && c.points is number && c.points >= 0
+               && c.totalSpent is number && c.totalSpent >= 0;
+      }
+    }
+
+    // Suppliers
+    match /suppliers/{supplierId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(supplierId) && isValidSupplier(incoming());
+      allow update: if isSignedIn() && isValidId(supplierId) && isValidSupplier(incoming());
+
+      function isValidSupplier(s) {
+        return s.name is string && s.name.size() > 0 && s.name.size() <= 200
+               && s.contactPerson is string && s.contactPerson.size() <= 200
+               && s.phone is string && s.phone.size() <= 20
+               && s.email is string && s.email.size() <= 200;
+      }
+    }
+
+    // Purchases
+    match /purchases/{purchaseId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(purchaseId) && isValidPurchase(incoming());
+      allow update: if isSignedIn() && isValidId(purchaseId) && isValidPurchase(incoming())
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'timestamp']);
+
+      function isValidPurchase(p) {
+        return p.supplierId is string && p.supplierId.size() <= 128
+               && p.items is list && p.items.size() > 0
+               && p.total is number && p.total >= 0
+               && p.status in ['pending', 'received', 'cancelled']
+               && p.timestamp == request.time;
+      }
+    }
+  }
+}

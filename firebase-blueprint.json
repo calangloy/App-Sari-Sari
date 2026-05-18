@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "An item in the inventory",
+      "type": "object",
+      "properties": {
+        "barcode": { "type": "string", "description": "Unique barcode of the product" },
+        "name": { "type": "string", "description": "Name of the product" },
+        "costPrice": { "type": "number", "description": "Buying price from supplier" },
+        "sellingPrice": { "type": "number", "description": "Retail price for customers" },
+        "stockLevel": { "type": "number", "description": "Current quantity in stock" },
+        "category": { "type": "string", "description": "Category of the product" },
+        "supplierId": { "type": "string", "description": "ID of the current supplier" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["barcode", "name", "costPrice", "sellingPrice", "stockLevel"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "A transaction record",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "description": "List of items sold"
+        },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["cash", "card", "e-wallet"] },
+        "customerId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["items", "total", "paymentMethod", "timestamp"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "points": { "type": "number" },
+        "totalSpent": { "type": "number" }
+      },
+      "required": ["name"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Supplier information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Purchase": {
+      "title": "Purchase",
+      "description": "Restock order from a supplier",
+      "type": "object",
+      "properties": {
+        "supplierId": { "type": "string" },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "received", "cancelled"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["supplierId", "items", "total", "status", "timestamp"]
+    }
+  },
+  "firestore": {
+    "products": {
+      "schema": "Product",
+      "description": "Inventory of products"
+    },
+    "sales": {
+      "schema": "Sale",
+      "description": "History of sales transactions"
+    },
+    "customers": {
+      "schema": "Customer",
+      "description": "Customer records"
+    },
+    "suppliers": {
+      "schema": "Supplier",
+      "description": "List of suppliers"
+    },
+    "purchases": {
+      "schema": "Purchase",
+      "description": "History of purchase orders from suppliers"
+    }
+  }
+}
