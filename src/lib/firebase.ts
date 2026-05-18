@@ -1,16 +1,30 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeApp, getApp, getApps, deleteApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, doc, getDocFromServer, setDoc, serverTimestamp } from 'firebase/firestore';
 
 // In AI Studio, this file is generated after set_up_firebase
-// We use a relative path from src/lib to the root's parent (since the applet structure can vary)
-// but typically it is at the root.
 // @ts-ignore
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// Helper to create users without signing out the current admin
+export const createInternalAuthUser = async (username: string, password: string) => {
+  const email = `${username.toLowerCase().trim()}@store.internal`;
+  const secondaryAppName = `Secondary-${Date.now()}`;
+  const secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
+  const secondaryAuth = getAuth(secondaryApp);
+  
+  try {
+    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    return userCredential.user.uid;
+  } finally {
+    // Delete the secondary app instance to clean up
+    await deleteApp(secondaryApp);
+  }
+};
 
 // Connection test as per skill
 const testConnection = async () => {

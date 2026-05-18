@@ -31,7 +31,12 @@ export const LoginView = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const loginEmail = username.includes('@') ? username : `${username}@store.internal`;
+      const sanitizedUsername = username.toLowerCase().trim().replace(/\s/g, '');
+      if (!sanitizedUsername) {
+        setError("Please enter a username.");
+        return;
+      }
+      const loginEmail = sanitizedUsername.includes('@') ? sanitizedUsername : `${sanitizedUsername}@store.internal`;
       await signInWithEmailAndPassword(auth, loginEmail, password);
     } catch (err: any) {
       console.error(err);

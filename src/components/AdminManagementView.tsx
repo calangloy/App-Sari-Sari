@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 import { useCollection, dbService } from '../lib/db';
 import { SystemUser } from '../types';
-import { orderBy, serverTimestamp } from 'firebase/firestore';
+import { orderBy, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { db, createInternalAuthUser } from '../lib/firebase';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -29,18 +30,26 @@ export const AdminManagementView = () => {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newUserData.username) return;
     try {
-      // In a real app without Admin SDK, we'd either use a Cloud Function
-      // or just create the record in 'users' and wait for the user to login with that email.
-      await dbService.add('users', {
-        ...newUserData,
+      // 1. Create Auth user first (with fixed password: Admin1234)
+      const sanitizedUsername = newUserData.username.toLowerCase().trim().replace(/\s/g, '');
+      const uid = await createInternalAuthUser(sanitizedUsername, 'Admin1234');
+      
+      // 2. Create Firestore record with the SAME id
+      await setDoc(doc(db, 'users', uid), {
+        name: newUserData.name,
+        username: sanitizedUsername,
+        role: newUserData.role,
         createdAt: serverTimestamp()
       });
+
       setIsAddingUser(false);
       setNewUserData({ name: '', username: '', role: 'cashier' });
-    } catch (error) {
+      alert(`Account created! Username: ${sanitizedUsername} | Pass: Admin1234`);
+    } catch (error: any) {
       console.error(error);
-      alert("Failed to add user. Ensure you are the owner.");
+      alert(error.message || "Failed to add user.");
     }
   };
 

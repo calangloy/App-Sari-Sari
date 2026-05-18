@@ -16,7 +16,8 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { dbService, useCollection } from '../lib/db';
-import { serverTimestamp, orderBy } from 'firebase/firestore';
+import { serverTimestamp, orderBy, doc, setDoc } from 'firebase/firestore';
+import { db, createInternalAuthUser } from '../lib/firebase';
 import { SystemUser } from '../types';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -302,13 +303,26 @@ export const SettingsView = () => {
             </h2>
             <form onSubmit={async (e) => {
               e.preventDefault();
+              if (!newUserData.username) return;
               try {
-                await dbService.add('users', { ...newUserData, createdAt: serverTimestamp() });
+                // 1. Create Auth user first (with fixed password: Admin1234)
+                const sanitizedUsername = newUserData.username.toLowerCase().trim().replace(/\s/g, '');
+                const uid = await createInternalAuthUser(sanitizedUsername, 'Admin1234');
+                
+                // 2. Create Firestore record with the SAME id
+                await setDoc(doc(db, 'users', uid), {
+                  name: newUserData.name,
+                  username: sanitizedUsername,
+                  role: newUserData.role,
+                  createdAt: serverTimestamp()
+                });
+
                 setIsAddingUser(false);
                 setNewUserData({ name: '', username: '', role: 'cashier' });
-              } catch (err) {
+                alert(`Account created! Username: ${sanitizedUsername} | Pass: Admin1234`);
+              } catch (err: any) {
                 console.error(err);
-                alert("Only Owners can manage accounts.");
+                alert(err.message || "Failed to create account.");
               }
             }} className="space-y-4">
               <div className="space-y-1.5">

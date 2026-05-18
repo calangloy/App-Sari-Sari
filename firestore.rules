@@ -3,11 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Helper functions
     function isSignedIn() {
-      return request.auth != null && request.auth.token.email_verified == true;
+      return request.auth != null;
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128;
     }
 
     function incoming() {
@@ -71,7 +71,8 @@ service cloud.firestore {
     // Sales
     match /sales/{saleId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(saleId) && isValidSale(incoming());
+      allow create: if isSignedIn() && isValidSale(incoming());
+      allow delete: if isAdmin();
       
       function isValidSale(s) {
         return s.keys().hasAll(['items', 'total', 'paymentMethod', 'timestamp'])
@@ -86,9 +87,10 @@ service cloud.firestore {
     // Customers
     match /customers/{customerId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(customerId) && isValidCustomer(incoming());
-      allow update: if isSignedIn() && isValidId(customerId) && isValidCustomer(incoming())
+      allow create: if isSignedIn() && isValidCustomer(incoming());
+      allow update: if isSignedIn() && isValidCustomer(incoming())
                     && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'points', 'totalSpent']);
+      allow delete: if isAdmin();
 
       function isValidCustomer(c) {
         return c.keys().hasAll(['name', 'phone', 'points', 'totalSpent'])
@@ -102,8 +104,9 @@ service cloud.firestore {
     // Suppliers
     match /suppliers/{supplierId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(supplierId) && isValidSupplier(incoming());
-      allow update: if isSignedIn() && isValidId(supplierId) && isValidSupplier(incoming());
+      allow create: if isSignedIn() && isValidSupplier(incoming());
+      allow update: if isSignedIn() && isValidSupplier(incoming());
+      allow delete: if isAdmin();
 
       function isValidSupplier(s) {
         return s.name is string && s.name.size() > 0 && s.name.size() <= 200
@@ -116,9 +119,10 @@ service cloud.firestore {
     // Purchases
     match /purchases/{purchaseId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(purchaseId) && isValidPurchase(incoming());
+      allow create: if isSignedIn() && isValidPurchase(incoming());
       allow update: if isSignedIn() && isValidId(purchaseId) && isValidPurchase(incoming())
                     && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'timestamp']);
+      allow delete: if isAdmin();
 
       function isValidPurchase(p) {
         return p.supplierId is string && p.supplierId.size() <= 128
