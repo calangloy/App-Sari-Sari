@@ -237,93 +237,89 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
   // PROFESSIONAL CASHIER MODE
   if (isCashierMode) {
     return (
-      <div className="h-full bg-slate-950 text-white flex flex-col font-sans overflow-hidden">
+      <div className="h-full bg-slate-900 text-white flex flex-col font-mono overflow-hidden">
         {/* Banner with Store Info & Time */}
-        <div className="bg-slate-900 border-b border-slate-800 px-8 py-3 flex justify-between items-center no-print">
+        <div className="bg-slate-800 border-b border-slate-700 px-8 py-3 flex justify-between items-center no-print">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold tracking-tight text-white uppercase italic">{storeSettings.name}</h1>
-            <span className="text-[10px] font-mono text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded">TERMINAL_01</span>
+            <h1 className="text-xl font-black tracking-tighter text-blue-400 uppercase">{storeSettings.name}</h1>
+            <span className="text-[10px] text-slate-400 bg-slate-700 px-2 py-0.5 rounded">STATION 01</span>
           </div>
-          <div className="flex items-center gap-8">
-            <div className="text-right border-r border-slate-800 pr-8">
-              <p className="text-lg font-mono font-bold text-white">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <p className="text-sm font-bold">{new Date().toLocaleTimeString()}</p>
+              <p className="text-[10px] text-slate-400">{new Date().toLocaleDateString()}</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-bold text-white">{user?.name}</p>
-                <p className="text-[10px] text-blue-500 font-black uppercase tracking-widest">CASHIER ACCOUNT</p>
-              </div>
-              <button 
-                onClick={onLogout}
-                className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 group"
-                title="Logout"
-              >
-                <LogOut size={20} />
-              </button>
-            </div>
+            <button 
+              onClick={onLogout}
+              className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 group"
+              title="Logout"
+            >
+              <LogOut size={20} />
+              <span className="text-xs font-black uppercase tracking-widest hidden lg:inline">Logout Account</span>
+            </button>
           </div>
         </div>
 
         <div className="flex-1 flex overflow-hidden no-print">
           {/* Main Transaction Area */}
-          <div className="flex-1 flex flex-col bg-slate-950">
+          <div className="flex-1 flex flex-col border-r border-slate-800">
             {/* Real-time Scanning Input */}
-            <div className="p-8 border-b border-slate-900/50">
+            <div className="p-8 bg-slate-800/50">
               <div className="relative group">
-                <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-3">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-ping"></div>
-                  <Barcode className="text-blue-500" size={32} />
-                </div>
+                <Scan className="absolute left-6 top-1/2 -translate-y-1/2 text-blue-400 group-focus-within:animate-pulse" size={32} />
                 <form onSubmit={handleManualScan}>
                   <input
                     ref={manualInputRef}
                     autoFocus
                     type="text"
-                    placeholder="SCAN BARCODE..."
-                    className="w-full pl-24 pr-8 py-10 bg-slate-900 border-2 border-slate-900 rounded-[2rem] focus:border-blue-500/50 transition-all text-5xl font-mono font-bold text-white focus:outline-none placeholder:text-slate-800 tracking-tight"
+                    placeholder="SCANNIN READY..."
+                    className="w-full pl-20 pr-8 py-8 bg-slate-900 border-2 border-slate-700 rounded-2xl focus:border-blue-500 transition-all text-4xl font-black text-white focus:outline-none placeholder:text-slate-800 tracking-tighter"
                     value={manualEntry}
                     onChange={(e) => setManualEntry(e.target.value)}
                   />
                 </form>
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-bold uppercase flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  Connected
+                </div>
               </div>
             </div>
 
-            {/* List of scanned items */}
+            {/* List of scanned items (Professional Table Style) */}
             <div className="flex-1 overflow-auto px-8 py-4">
               <table className="w-full">
-                <thead className="sticky top-0 bg-slate-950 z-10">
-                  <tr className="text-left text-slate-600 text-[10px] font-black uppercase tracking-[0.2em] border-b border-slate-900">
-                    <th className="py-6 px-4">Item Description</th>
-                    <th className="py-6 text-center">Unit Price</th>
-                    <th className="py-6 text-center">Quantity</th>
-                    <th className="py-6 text-right pr-4">Subtotal</th>
+                <thead className="sticky top-0 bg-slate-900 z-10">
+                  <tr className="text-left text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">
+                    <th className="py-4">Description</th>
+                    <th className="py-4 text-center">Unit Price</th>
+                    <th className="py-4 text-center">Qty</th>
+                    <th className="py-4 text-right">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-900">
+                <tbody className="divide-y divide-slate-800">
                   {cart.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-32 text-center">
-                        <ShoppingBag size={120} className="mx-auto text-slate-900 animate-pulse" />
-                        <p className="text-slate-800 font-bold tracking-[0.3em] text-sm mt-8 uppercase">Ready for Transaction</p>
+                      <td colSpan={4} className="py-24 text-center">
+                        <ShoppingBag size={64} className="mx-auto text-slate-800 mb-4 opacity-20" />
+                        <p className="text-slate-700 font-bold tracking-widest text-sm">WAITING FOR SCANS</p>
                       </td>
                     </tr>
                   ) : (
                     cart.map((item) => (
-                      <tr key={item.productId} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <td className="py-8 px-4">
-                          <div className="font-bold text-2xl text-white tracking-tight uppercase">{item.name}</div>
-                          <div className="text-[11px] font-mono text-slate-500 mt-1 uppercase tracking-widest leading-none">SKU_{item.productId.slice(0,10)}</div>
+                      <tr key={item.productId} className="animate-in fade-in slide-in-from-left-4">
+                        <td className="py-6">
+                          <div className="font-black text-xl text-white tracking-tight">{item.name}</div>
+                          <div className="text-[10px] text-slate-500 font-bold mt-1">ID: {item.productId.slice(0,8)}</div>
                         </td>
-                        <td className="py-8 text-center text-slate-400 font-mono text-xl">{formatCurrency(item.price)}</td>
-                        <td className="py-8">
-                          <div className="flex items-center justify-center gap-6">
-                            <button onClick={() => updateQuantity(item.productId, -1)} className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center hover:bg-slate-800 transition-colors">-</button>
-                            <span className="text-3xl font-mono font-bold text-blue-400 w-16 text-center">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.productId, 1)} className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center hover:bg-slate-800 transition-colors">+</button>
+                        <td className="py-6 text-center text-slate-400 font-bold">{formatCurrency(item.price)}</td>
+                        <td className="py-6">
+                          <div className="flex items-center justify-center gap-4">
+                            <button onClick={() => updateQuantity(item.productId, -1)} className="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center hover:bg-slate-700">-</button>
+                            <span className="text-2xl font-black text-blue-400 w-12 text-center">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.productId, 1)} className="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center hover:bg-slate-700">+</button>
                           </div>
                         </td>
-                        <td className="py-8 text-right pr-4 font-mono font-bold text-3xl text-white">
+                        <td className="py-6 text-right font-black text-2xl text-white">
                           {formatCurrency(item.price * item.quantity)}
                         </td>
                       </tr>
@@ -335,75 +331,78 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
           </div>
 
           {/* Checkout / Totals Panel */}
-          <div className="w-[480px] bg-slate-900 flex flex-col p-10 border-l border-slate-800">
-            <div className="flex-1 space-y-10">
-              <div className="space-y-6">
-                <p className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Current Bill</p>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-slate-500 font-medium">Items Total</span>
-                    <span className="text-xl font-mono font-bold text-white">{cart.reduce((s, i) => s + i.quantity, 0)} Pcs</span>
+          <div className="w-[450px] bg-slate-800 flex flex-col p-8 border-l border-slate-700">
+            <div className="flex-1 space-y-8">
+              <div className="space-y-4">
+                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Current Transaction</p>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-xl text-slate-400 font-bold">
+                    <span>Items Count</span>
+                    <span>{cart.reduce((s, i) => s + i.quantity, 0)}</span>
                   </div>
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-slate-500 font-medium">Gross Value</span>
-                    <span className="text-xl font-mono font-bold text-white">{formatCurrency(subtotal)}</span>
+                  <div className="flex justify-between text-xl text-slate-400 font-bold">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-slate-500 font-medium">Estimated VAT</span>
-                    <span className="text-xl font-mono font-bold text-white">{formatCurrency(tax)}</span>
+                  <div className="flex justify-between text-xl text-slate-400 font-bold">
+                    <span>Tax (VAT)</span>
+                    <span>{formatCurrency(tax)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-10 border-t border-slate-800">
-                <p className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase mb-4">Total Payable</p>
-                <h2 className="text-[5.5rem] font-mono font-bold tracking-tighter leading-none text-blue-400">
+              <div className="pt-8 border-t border-slate-700">
+                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase mb-4">Total Amount Due</p>
+                <h2 className="text-[5rem] font-black tracking-tighter leading-none text-blue-400 mb-2">
                   {formatCurrency(total)}
                 </h2>
+                <div className="text-slate-500 font-bold italic text-xs">
+                  * All amounts in Philippine Peso (PHP)
+                </div>
               </div>
 
-              <div className="space-y-6">
-                <p className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Payment Method</p>
+              <div className="space-y-4">
+                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Payment Method</p>
                 <div className="grid grid-cols-2 gap-4">
                   <button 
                     onClick={() => setPaymentMethod('cash')}
                     className={cn(
-                      "flex flex-col items-center gap-3 p-8 rounded-3xl border-2 transition-all group",
-                      paymentMethod === 'cash' ? "bg-white text-slate-950 border-white" : "bg-slate-950 text-slate-500 border-slate-800 shadow-none"
+                      "flex items-center gap-3 px-6 py-4 rounded-2xl border-2 transition-all font-black text-sm uppercase tracking-widest",
+                      paymentMethod === 'cash' ? "bg-white text-slate-900 border-white shadow-xl shadow-white/5" : "bg-slate-900 text-slate-400 border-slate-700"
                     )}
                   >
-                    <Banknote size={28} className={paymentMethod === 'cash' ? "text-slate-950" : "text-slate-800"} />
-                    <span className="font-bold text-[10px] uppercase tracking-widest">Cash</span>
+                    <Banknote size={20} />
+                    Cash
                   </button>
                   <button 
                      onClick={() => setPaymentMethod('e-wallet')}
                      className={cn(
-                        "flex flex-col items-center gap-3 p-8 rounded-3xl border-2 transition-all group",
-                        paymentMethod === 'e-wallet' ? "bg-blue-600 text-white border-blue-600" : "bg-slate-950 text-slate-500 border-slate-800 shadow-none"
+                        "flex items-center gap-3 px-6 py-4 rounded-2xl border-2 transition-all font-black text-sm uppercase tracking-widest",
+                        paymentMethod === 'e-wallet' ? "bg-blue-500 text-white border-blue-400 shadow-xl shadow-blue-500/10" : "bg-slate-900 text-slate-400 border-slate-700"
                       )}
                   >
-                    <Wallet size={28} className={paymentMethod === 'e-wallet' ? "text-white" : "text-slate-800"} />
-                    <span className="font-bold text-[10px] uppercase tracking-widest">GCash</span>
+                    <Wallet size={20} />
+                    GCash
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="pt-10 space-y-6">
+            <div className="pt-8 space-y-4">
               <button
                 onClick={handleCheckout}
                 disabled={cart.length === 0 || isProcessing}
-                className="w-full bg-blue-600 text-white py-10 rounded-[2.5rem] font-bold text-3xl uppercase tracking-widest shadow-2xl shadow-blue-600/20 hover:bg-blue-500 active:scale-95 transition-all flex items-center justify-center gap-6"
+                className="w-full bg-blue-500 text-white py-8 rounded-3xl font-black text-2xl uppercase tracking-widest shadow-2xl shadow-blue-500/20 hover:bg-blue-400 active:scale-95 transition-all flex items-center justify-center gap-4"
               >
                 {isProcessing ? <Loader2 className="animate-spin" size={32} /> : <Receipt size={32} />}
-                PROCESS SALE
+                COMPLETE SALE
               </button>
               <button 
                 onClick={handleCancelTransaction}
-                className="w-full py-4 text-slate-700 font-bold uppercase text-[10px] tracking-[0.3em] hover:text-red-500 transition-colors"
+                className="w-full py-4 text-slate-500 font-black uppercase text-[10px] tracking-widest hover:text-red-400 transition-colors"
                 disabled={cart.length === 0}
               >
-                Cancel with Manager PIN
+                Cancel Transaction [ESC]
               </button>
             </div>
           </div>
@@ -411,22 +410,22 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
 
         {/* Receipt / Success Modals should still appear above this */}
         {showReceipt && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-xl no-print">
-            <div className="bg-white rounded-[3rem] p-12 max-w-md w-full shadow-2xl text-center space-y-8 animate-in zoom-in-95 duration-300">
-              <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle2 size={48} />
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md no-print">
+            <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl text-center space-y-6 animate-in zoom-in-95 duration-300">
+              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle2 size={32} />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">SUCCESS!</h3>
-                <p className="text-slate-500 font-medium tracking-tight">Printing customer receipt...</p>
+              <div className="space-y-1">
+                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">SUCCESS!</h3>
+                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Printing Receipt...</p>
               </div>
               
-              <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-left space-y-4">
-                <div className="flex justify-between text-xs font-black text-slate-400 uppercase tracking-widest">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left space-y-2">
+                <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   <span>Reference:</span>
                   <span className="text-slate-900">{lastTransaction?.orderId}</span>
                 </div>
-                <div className="flex justify-between text-4xl font-black text-slate-900 pt-4 border-t border-slate-200">
+                <div className="flex justify-between text-2xl font-black text-slate-900 pt-2 border-t border-slate-200">
                   <span>TOTAL:</span>
                   <span>{formatCurrency(lastTransaction?.total || 0)}</span>
                 </div>
@@ -434,9 +433,9 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
 
               <button
                 onClick={finishTransaction}
-                className="w-full bg-slate-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-slate-800 transition-all shadow-xl active:scale-95"
+                className="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all shadow-xl active:scale-95"
               >
-                Open Next Register
+                Start New Transaction
               </button>
             </div>
           </div>
