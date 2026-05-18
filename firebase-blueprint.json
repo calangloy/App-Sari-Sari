@@ -68,6 +68,18 @@
         "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["supplierId", "items", "total", "status", "timestamp"]
+    },
+    "User": {
+      "title": "User",
+      "description": "System user with specific roles",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "admin", "cashier"] },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role", "name"]
     }
   },
   "firestore": {
@@ -90,6 +102,10 @@
     "purchases": {
       "schema": "Purchase",
       "description": "History of purchase orders from suppliers"
+    },
+    "users": {
+      "schema": "User",
+      "description": "System users and their roles"
     }
   }
 }

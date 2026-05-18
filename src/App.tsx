@@ -5,7 +5,8 @@
 
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
-import { auth } from './lib/firebase';
+import { auth, db } from './lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingCart, 
@@ -20,7 +21,8 @@ import {
   History,
   LayoutDashboard,
   LogOut,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from './lib/utils';
 
@@ -31,21 +33,34 @@ import { InventoryView } from './components/InventoryView';
 import { CustomersView } from './components/CustomersView';
 import { SuppliersView } from './components/SuppliersView';
 import { SettingsView } from './components/SettingsView';
+import { AdminManagementView } from './components/AdminManagementView';
+import { SystemUser } from './types';
 
 // Placeholder fragments for other views
 const Sales = () => <div className="p-8">Sales Content</div>;
 
-type View = 'dashboard' | 'pos' | 'inventory' | 'sales' | 'customers' | 'suppliers' | 'settings';
+type View = 'dashboard' | 'pos' | 'inventory' | 'sales' | 'customers' | 'suppliers' | 'settings' | 'admin';
 
 export default function App() {
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [systemUser, setSystemUser] = useState<SystemUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      setUser(authUser);
+      if (authUser) {
+        const userDoc = await getDoc(doc(db, 'users', authUser.uid));
+        if (userDoc.exists()) {
+          setSystemUser({ id: userDoc.id, ...userDoc.data() } as SystemUser);
+        } else {
+          setSystemUser(null);
+        }
+      } else {
+        setSystemUser(null);
+      }
       setAuthLoading(false);
     });
     return () => unsubscribe();
@@ -79,6 +94,10 @@ export default function App() {
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'suppliers', label: 'Suppliers', icon: Truck },
   ];
+
+  if (systemUser?.role === 'owner' || systemUser?.role === 'admin') {
+    navItems.push({ id: 'admin', label: 'Team', icon: ShieldCheck });
+  }
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
@@ -208,6 +227,7 @@ export default function App() {
               {activeView === 'customers' && <CustomersView />}
               {activeView === 'suppliers' && <SuppliersView />}
               {activeView === 'settings' && <SettingsView />}
+              {activeView === 'admin' && <AdminManagementView />}
             </motion.div>
           </AnimatePresence>
         </div>

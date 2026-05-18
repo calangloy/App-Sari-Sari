@@ -1,13 +1,15 @@
-import { useState } from 'react';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import React, { useState } from 'react';
+import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { motion } from 'motion/react';
-import { LogIn, Gavel as Google, Store, AlertCircle, Loader2 } from 'lucide-react';
+import { LogIn, Store, AlertCircle, Loader2, Key } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export const LoginView = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -18,6 +20,21 @@ export const LoginView = () => {
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to sign in. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
+      console.error(err);
+      setError("Invalid email or password. Please contact your store manager.");
     } finally {
       setIsLoading(false);
     }
@@ -110,26 +127,29 @@ export const LoginView = () => {
 
             <div className="pt-4">
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Internal Staff Only</p>
-              <div className="space-y-3">
+              <form onSubmit={handleEmailLogin} className="space-y-3">
                 <input 
                   type="email" 
                   placeholder="Official Email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
-                  disabled
                 />
                 <input 
                   type="password" 
                   placeholder="Master Password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
-                  disabled
                 />
                 <button 
-                  disabled
-                  className="w-full bg-slate-200 text-slate-400 py-4 rounded-xl font-black text-sm uppercase tracking-widest cursor-not-allowed"
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 active:scale-[0.98] disabled:opacity-50"
                 >
-                  Admin Login
+                  {isLoading ? "Authenticating..." : "Admin Login"}
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </div>

@@ -18,6 +18,22 @@ service cloud.firestore {
       return resource.data;
     }
 
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && getUserData().role == role;
+    }
+
+    function isOwner() {
+      return hasRole('owner');
+    }
+
+    function isAdmin() {
+      return hasRole('admin') || isOwner();
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
@@ -26,16 +42,16 @@ service cloud.firestore {
     // Products
     match /products/{productId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(productId) && isValidProduct(incoming());
+      allow create: if isAdmin() && isValidId(productId) && isValidProduct(incoming());
       allow update: if isSignedIn() && isValidId(productId) && isValidProduct(incoming())
                     && (
-                      // Action: Stock Update
+                      // Action: Stock Update (Cashier can do this too via checkout)
                       (incoming().diff(existing()).affectedKeys().hasOnly(['stockLevel', 'updatedAt'])) ||
-                      // Action: Price/Info Update
-                      (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'costPrice', 'sellingPrice', 'category', 'supplierId', 'updatedAt']))
+                      // Action: Price/Info Update (Admin only)
+                      (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'costPrice', 'sellingPrice', 'category', 'supplierId', 'updatedAt']))
                     )
                     && (incoming().barcode == existing().barcode); // Barcode is immutable
-      allow delete: if isSignedIn();
+      allow delete: if isAdmin();
 
       function isValidProduct(p) {
         return p.keys().hasAll(['name', 'barcode', 'costPrice', 'sellingPrice', 'stockLevel', 'category', 'supplierId', 'updatedAt'])
@@ -110,6 +126,12 @@ service cloud.firestore {
                && p.status in ['pending', 'received', 'cancelled']
                && p.timestamp == request.time;
       }
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner() || request.auth.uid == userId;
     }
   }
 }

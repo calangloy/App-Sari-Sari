@@ -4,10 +4,12 @@ import { Product } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { useCollection, dbService } from '../lib/db';
 import { orderBy } from 'firebase/firestore';
+import { AddProductModal } from './AddProductModal';
 
 export const InventoryView = () => {
   const { data: products, loading } = useCollection<Product>('products', orderBy('name'));
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -35,11 +37,16 @@ export const InventoryView = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider"
+        >
           <Plus size={18} />
           <span>Add New Product</span>
         </button>
       </div>
+
+      <AddProductModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
