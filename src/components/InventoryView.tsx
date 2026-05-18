@@ -10,6 +10,27 @@ export const InventoryView = () => {
   const { data: products, loading } = useCollection<Product>('products', orderBy('name'));
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    try {
+      await dbService.remove('products', id);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete product.");
+    }
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setIsModalOpen(true);
+  };
+
+  const closePortal = () => {
+    setIsModalOpen(false);
+    setEditingProduct(null);
+  };
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -38,7 +59,10 @@ export const InventoryView = () => {
           />
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditingProduct(null);
+            setIsModalOpen(true);
+          }}
           className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider"
         >
           <Plus size={18} />
@@ -46,7 +70,11 @@ export const InventoryView = () => {
         </button>
       </div>
 
-      <AddProductModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <AddProductModal 
+        isOpen={isModalOpen} 
+        onClose={closePortal} 
+        product={editingProduct}
+      />
 
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
@@ -106,10 +134,16 @@ export const InventoryView = () => {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center gap-1">
-                      <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                      <button 
+                        onClick={() => handleEdit(product)}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                      >
                         <Edit2 size={16} />
                       </button>
-                      <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                      <button 
+                        onClick={() => handleDelete(product.id, product.name)}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      >
                         <Trash2 size={16} />
                       </button>
                     </div>

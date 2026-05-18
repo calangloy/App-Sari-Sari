@@ -60,31 +60,46 @@ export const SettingsView = () => {
     role: 'cashier' as const
   });
 
+  const handleDeleteUser = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove ${name}?`)) return;
+    try {
+      await dbService.remove('users', id);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete user.");
+    }
+  };
+
   const seedDatabase = async () => {
     setIsSeeding(true);
     try {
-      // Seed Products
-      const products = [
-        { barcode: '123456789', name: 'Piattos Cheese 40g', costPrice: 12, sellingPrice: 15, stockLevel: 24, category: 'Snacks', supplierId: 'S1' },
-        { barcode: '987654321', name: 'Coke 1.5L', costPrice: 65, sellingPrice: 75, stockLevel: 10, category: 'Beverages', supplierId: 'S1' },
-        { barcode: '112233445', name: 'Bear Brand 33g', costPrice: 14, sellingPrice: 16, stockLevel: 50, category: 'Milk', supplierId: 'S2' },
-      ];
-
-      for (const p of products) {
-        await dbService.add('products', { ...p, updatedAt: serverTimestamp() });
-      }
-
-      // Seed Suppliers
-      const suppliers = [
+      // 1. Seed Suppliers first and get their IDs
+      const suppliersData = [
         { name: 'Mega Beverages Inc.', contactPerson: 'John Smith', phone: '09123334444', email: 'sales@megabev.com' },
         { name: 'Valley Snacks Corp.', contactPerson: 'Jane Doe', phone: '09224445555', email: 'orders@valleysnacks.ph' },
       ];
 
-      for (const s of suppliers) {
-        await dbService.add('suppliers', s);
+      const supplierIds: string[] = [];
+      for (const s of suppliersData) {
+        const docRef = await dbService.add('suppliers', s);
+        if (docRef) supplierIds.push(docRef.id);
       }
 
-      alert("Database seeded successfully!");
+      const defaultSupplierId = supplierIds[0] || 'manual-entry';
+      const secondSupplierId = supplierIds[1] || defaultSupplierId;
+
+      // 2. Seed Products with real supplier IDs
+      const productsData = [
+        { barcode: '123456789', name: 'Piattos Cheese 40g', costPrice: 12, sellingPrice: 15, stockLevel: 24, category: 'Snacks', supplierId: defaultSupplierId },
+        { barcode: '987654321', name: 'Coke 1.5L', costPrice: 65, sellingPrice: 75, stockLevel: 10, category: 'Beverages', supplierId: defaultSupplierId },
+        { barcode: '112233445', name: 'Bear Brand 33g', costPrice: 14, sellingPrice: 16, stockLevel: 50, category: 'Milk', supplierId: secondSupplierId },
+      ];
+
+      for (const p of productsData) {
+        await dbService.add('products', { ...p, updatedAt: serverTimestamp() });
+      }
+
+      alert("Database seeded successfully with linked suppliers!");
     } catch (error) {
       console.error(error);
       alert("Failed to seed database. Check console for details.");
@@ -258,7 +273,10 @@ export const SettingsView = () => {
                     )}>
                       {u.role}
                     </span>
-                    <button className="text-slate-300 hover:text-red-500 transition-colors">
+                    <button 
+                      onClick={() => handleDeleteUser(u.id, u.name)}
+                      className="text-slate-300 hover:text-red-500 transition-colors"
+                    >
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -278,10 +296,13 @@ export const SettingsView = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="relative w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl"
           >
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
               <UserPlus className="text-blue-600" size={24} />
               Create Staff Account
             </h2>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">
+              Default Password: <span className="text-blue-600">Admin1234</span>
+            </p>
             <form onSubmit={async (e) => {
               e.preventDefault();
               try {

@@ -1,14 +1,40 @@
 import React, { useState } from 'react';
-import { Plus, Search, Mail, Phone, User, Landmark, Loader2 } from 'lucide-react';
+import { Plus, Search, Mail, Phone, User, Landmark, Loader2, Trash2, Edit2 } from 'lucide-react';
 import { Supplier } from '../types';
-import { useCollection } from '../lib/db';
+import { useCollection, dbService } from '../lib/db';
 import { orderBy } from 'firebase/firestore';
 import { AddSupplierModal } from './AddSupplierModal';
+import { PurchaseOrderModal } from './PurchaseOrderModal';
+import { PurchaseLogModal } from './PurchaseLogModal';
 
 export const SuppliersView = () => {
   const { data: suppliers, loading } = useCollection<Supplier>('suppliers', orderBy('name'));
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+
+  const openOrder = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setIsOrderModalOpen(true);
+  };
+
+  const openLog = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setIsLogModalOpen(true);
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Remove ${name} from suppliers? This won't delete purchase logs.`)) return;
+    try {
+      await dbService.remove('suppliers', id);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete supplier.");
+    }
+  };
 
   const filtered = suppliers.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -47,14 +73,37 @@ export const SuppliersView = () => {
 
       <AddSupplierModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
+      {selectedSupplier && (
+        <>
+          <PurchaseOrderModal 
+            isOpen={isOrderModalOpen} 
+            onClose={() => setIsOrderModalOpen(false)} 
+            supplier={selectedSupplier} 
+          />
+          <PurchaseLogModal 
+            isOpen={isLogModalOpen} 
+            onClose={() => setIsLogModalOpen(false)} 
+            supplier={selectedSupplier} 
+          />
+        </>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((supplier) => (
           <div key={supplier.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-slate-50 text-slate-800 rounded-xl group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                <Landmark size={24} />
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-slate-50 text-slate-800 rounded-xl group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                  <Landmark size={24} />
+                </div>
+                <h3 className="font-black text-lg text-slate-900 line-clamp-1">{supplier.name}</h3>
               </div>
-              <h3 className="font-black text-lg text-slate-900 line-clamp-1">{supplier.name}</h3>
+              <button 
+                onClick={() => handleDelete(supplier.id, supplier.name)}
+                className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+              >
+                <Trash2 size={18} />
+              </button>
             </div>
             
             <div className="space-y-3">
@@ -73,10 +122,16 @@ export const SuppliersView = () => {
             </div>
 
             <div className="mt-8 flex gap-2">
-              <button className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 py-3 rounded-lg hover:bg-slate-100 hover:text-slate-600 transition-colors">
+              <button 
+                onClick={() => openLog(supplier)}
+                className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 py-3 rounded-lg hover:bg-slate-100 hover:text-slate-600 transition-colors"
+              >
                 Purchase Log
               </button>
-              <button className="flex-1 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 py-3 rounded-lg hover:bg-blue-700 shadow-md shadow-blue-100 transition-colors">
+              <button 
+                onClick={() => openOrder(supplier)}
+                className="flex-1 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 py-3 rounded-lg hover:bg-blue-700 shadow-md shadow-blue-100 transition-colors"
+              >
                 Order Now
               </button>
             </div>

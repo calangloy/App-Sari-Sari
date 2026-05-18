@@ -52,6 +52,16 @@ export const AdminManagementView = () => {
     }
   };
 
+  const handleDeleteUser = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove ${name}?`)) return;
+    try {
+      await dbService.remove('users', id);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete user.");
+    }
+  };
+
   const filtered = users.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -135,7 +145,10 @@ export const AdminManagementView = () => {
                       </select>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                      <button 
+                        onClick={() => handleDeleteUser(user.id, user.name)}
+                        className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                      >
                         <Trash2 size={18} />
                       </button>
                     </td>
@@ -189,7 +202,10 @@ export const AdminManagementView = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="relative w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl"
           >
-            <h2 className="text-xl font-bold mb-6">Add New Team Member</h2>
+            <h2 className="text-xl font-bold mb-1">Add New Team Member</h2>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">
+              Default Password: <span className="text-blue-600">Admin1234</span>
+            </p>
             <form onSubmit={handleAddUser} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>

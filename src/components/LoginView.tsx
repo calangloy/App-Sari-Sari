@@ -137,7 +137,7 @@ export const LoginView = () => {
                 />
                 <input 
                   type="password" 
-                  placeholder="Master Password" 
+                  placeholder="Password (Default: Admin1234)" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"

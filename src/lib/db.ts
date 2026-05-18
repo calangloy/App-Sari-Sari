@@ -6,6 +6,7 @@ import {
   orderBy,
   addDoc,
   updateDoc,
+  setDoc,
   deleteDoc,
   doc,
   getDocs,
@@ -81,6 +82,18 @@ export const dbService = {
       return await deleteDoc(doc(db, collectionPath, id));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `${collectionPath}/${id}`);
+    }
+  },
+
+  async set(collectionPath: string, id: string, data: any) {
+    try {
+      const docRef = doc(db, collectionPath, id);
+      return await setDoc(docRef, {
+        ...data,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `${collectionPath}/${id}`);
     }
   }
 };

@@ -4,14 +4,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { dbService } from '../lib/db';
 import { serverTimestamp } from 'firebase/firestore';
 import { useCollection } from '../lib/db';
-import { Supplier } from '../types';
+import { Supplier, Product } from '../types';
 
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
+  product?: Product | null;
 }
 
-export const AddProductModal = ({ isOpen, onClose }: AddProductModalProps) => {
+export const AddProductModal = ({ isOpen, onClose, product }: AddProductModalProps) => {
   const { data: suppliers } = useCollection<Supplier>('suppliers');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +26,32 @@ export const AddProductModal = ({ isOpen, onClose }: AddProductModalProps) => {
     supplierId: '',
     imageUrl: ''
   });
+
+  React.useEffect(() => {
+    if (product) {
+      setFormData({
+        name: product.name,
+        barcode: product.barcode,
+        costPrice: product.costPrice.toString(),
+        sellingPrice: product.sellingPrice.toString(),
+        stockLevel: product.stockLevel.toString(),
+        category: product.category,
+        supplierId: product.supplierId || '',
+        imageUrl: product.imageUrl || ''
+      });
+    } else {
+      setFormData({
+        name: '',
+        barcode: '',
+        costPrice: '',
+        sellingPrice: '',
+        stockLevel: '',
+        category: '',
+        supplierId: '',
+        imageUrl: ''
+      });
+    }
+  }, [product, isOpen]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,27 +72,24 @@ export const AddProductModal = ({ isOpen, onClose }: AddProductModalProps) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await dbService.add('products', {
+      const data = {
         ...formData,
         costPrice: Number(formData.costPrice),
         sellingPrice: Number(formData.sellingPrice),
         stockLevel: Number(formData.stockLevel),
         updatedAt: serverTimestamp()
-      });
+      };
+
+      if (product) {
+        await dbService.update('products', product.id, data);
+      } else {
+        await dbService.add('products', data);
+      }
+      
       onClose();
-      setFormData({
-        name: '',
-        barcode: '',
-        costPrice: '',
-        sellingPrice: '',
-        stockLevel: '',
-        category: '',
-        supplierId: '',
-        imageUrl: ''
-      });
     } catch (error) {
       console.error(error);
-      alert("Failed to add product. Check if fields are valid.");
+      alert("Failed to save product. Check if fields are valid.");
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +118,7 @@ export const AddProductModal = ({ isOpen, onClose }: AddProductModalProps) => {
                   <Package className="text-white" size={20} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Add New Product</h2>
+                  <h2 className="text-xl font-bold text-white">{product ? 'Edit Product' : 'Add New Product'}</h2>
                   <p className="text-xs text-slate-400 font-medium">Capture inventory details accurately</p>
                 </div>
               </div>

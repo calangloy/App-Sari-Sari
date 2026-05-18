@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Search, Mail, Phone, MapPin, MoreVertical, Loader2 } from 'lucide-react';
+import { Plus, Search, Mail, Phone, MapPin, MoreVertical, Loader2, Trash2, Edit2 } from 'lucide-react';
 import { Customer } from '../types';
 import { formatCurrency } from '../lib/utils';
-import { useCollection } from '../lib/db';
+import { useCollection, dbService } from '../lib/db';
 import { orderBy } from 'firebase/firestore';
 import { AddCustomerModal } from './AddCustomerModal';
 
@@ -10,6 +10,16 @@ export const CustomersView = () => {
   const { data: customers, loading } = useCollection<Customer>('customers', orderBy('name'));
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Permanently remove ${name} from records?`)) return;
+    try {
+      await dbService.remove('customers', id);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete customer.");
+    }
+  };
 
   const filtered = customers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -55,9 +65,14 @@ export const CustomersView = () => {
               <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 font-bold text-xl group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
                 {customer.name[0]}
               </div>
-              <button className="text-slate-300 hover:text-slate-900 transition-colors">
-                <MoreVertical size={20} />
-              </button>
+              <div className="flex gap-1">
+                <button 
+                  onClick={() => handleDelete(customer.id, customer.name)}
+                  className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
             <h3 className="font-bold text-lg text-slate-900">{customer.name}</h3>
             <div className="mt-4 space-y-2">

@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth, db } from './lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingCart, 
@@ -52,11 +52,28 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       setUser(authUser);
       if (authUser) {
-        const userDoc = await getDoc(doc(db, 'users', authUser.uid));
+        const userDocRef = doc(db, 'users', authUser.uid);
+        const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           setSystemUser({ id: userDoc.id, ...userDoc.data() } as SystemUser);
         } else {
-          setSystemUser(null);
+          // If user exists in Auth but not in Firestore, create a default 'owner' profile
+          // This ensures the first user can actually manage the app
+          const defaultUser = {
+            name: authUser.displayName || 'Store Owner',
+            email: authUser.email || '',
+            role: 'owner' as const,
+          };
+          try {
+            await setDoc(userDocRef, {
+              ...defaultUser,
+              updatedAt: serverTimestamp()
+            });
+            setSystemUser({ id: authUser.uid, ...defaultUser } as SystemUser);
+          } catch (err) {
+            console.error("Failed to auto-profile user", err);
+            setSystemUser(null);
+          }
         }
       } else {
         setSystemUser(null);
