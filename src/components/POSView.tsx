@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   Barcode,
   ShoppingBag,
-  LogOut
+  LogOut,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { Product, SaleItem, SystemUser } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
@@ -45,6 +47,8 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<any>(null);
   const [manualEntry, setManualEntry] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
 
   const subtotal = cart.reduce((acc, current) => acc + (current.price * current.quantity), 0);
   const tax = subtotal * (storeSettings.taxRate || 0);
@@ -166,7 +170,9 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
         timestamp: serverTimestamp(),
         orderId: `ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
         cashierId: user?.id,
-        cashierName: user?.name
+        cashierName: user?.name,
+        customerName: customerName || 'Walking Customer',
+        customerPhone: customerPhone || 'N/A'
       };
 
       const docRef = await dbService.add('sales', saleData);
@@ -221,6 +227,8 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
     setCart([]);
     setShowReceipt(false);
     setLastTransaction(null);
+    setCustomerName('');
+    setCustomerPhone('');
   };
 
   const categories = ['All', 'Drinks', 'Snacks', 'Canned Goods', 'Biscuits', 'Milk', 'Ingredients', 'Household', 'Groceries', 'Personal Care', 'Rice & Grains', 'Frozen Food', 'Bakery', 'Stationery', 'Medicine'];
@@ -237,18 +245,32 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
   // PROFESSIONAL CASHIER MODE
   if (isCashierMode) {
     return (
-      <div className="h-full bg-slate-950 text-white flex flex-col font-sans overflow-hidden">
+      <div className="h-full bg-slate-950 text-white flex flex-col font-sans overflow-hidden transition-colors duration-300">
         {/* Banner with Store Info & Time */}
         <div className="bg-slate-900 border-b border-slate-800 px-8 py-3 flex justify-between items-center no-print">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold tracking-tight text-white uppercase italic">{storeSettings.name}</h1>
             <span className="text-[10px] font-mono text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded">TERMINAL_01</span>
           </div>
-          <div className="flex items-center gap-8">
-            <div className="text-right border-r border-slate-800 pr-8">
+          <div className="flex items-center gap-6">
+            <div className="text-right border-r border-slate-800 pr-8 hidden sm:block">
               <p className="text-lg font-mono font-bold text-white">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</p>
             </div>
+            
+            {/* Dark Mode Toggle for Cashiers */}
+            <button
+              onClick={() => {
+                const isDark = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+              }}
+              className="p-3 bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-all border border-slate-700"
+              title="Toggle Dark Mode"
+            >
+              <Moon size={18} className="dark:hidden" />
+              <Sun size={18} className="hidden dark:block" />
+            </button>
+
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-sm font-bold text-white">{user?.name}</p>
@@ -362,7 +384,27 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
                 </h2>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-6 pt-6 border-t border-slate-800">
+                <p className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Customer Information (Optional)</p>
+                <div className="space-y-3">
+                  <input 
+                    type="text"
+                    placeholder="NAME..."
+                    className="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl text-blue-400 font-bold focus:border-blue-500 outline-none uppercase placeholder:text-slate-800 text-sm"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                  />
+                  <input 
+                    type="text"
+                    placeholder="PHONE..."
+                    className="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl text-blue-400 font-bold focus:border-blue-500 outline-none uppercase placeholder:text-slate-800 text-sm"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-6 pt-6 ">
                 <p className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Payment Method</p>
                 <div className="grid grid-cols-2 gap-4">
                   <button 
@@ -464,7 +506,15 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
               <span>ORDER ID: {lastTransaction?.orderId}</span>
             </div>
             <div className="flex justify-between">
-              <span>CASHIER: {user?.name || 'Staff Member'}</span>
+              <span>CUSTOMER: {lastTransaction?.customerName}</span>
+            </div>
+            {lastTransaction?.customerPhone !== 'N/A' && (
+              <div className="flex justify-between">
+                <span>PHONE: {lastTransaction?.customerPhone}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span>CASHIER: {lastTransaction?.cashierName || user?.name || 'Staff Member'}</span>
             </div>
           </div>
 

@@ -22,7 +22,9 @@ import {
   LayoutDashboard,
   LogOut,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { cn, formatCurrency } from './lib/utils';
 import { startOfDay } from 'date-fns';
@@ -47,6 +49,17 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [systemUser, setSystemUser] = useState<SystemUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   const { data: sales } = useCollection<any>('sales');
   const [dailyTarget, setDailyTarget] = useState(() => Number(localStorage.getItem('dailyTarget')) || 5000);
@@ -152,8 +165,9 @@ export default function App() {
 
   return (
     <div className={cn(
-      "flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden",
-      isCashier && "bg-white"
+      "flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden transition-colors duration-300",
+      "dark:bg-slate-950 dark:text-slate-200",
+      isCashier && "bg-white dark:bg-slate-950 text-slate-900"
     )}>
       {/* Sidebar Navigation */}
       {!isCashier && (
@@ -254,16 +268,23 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto relative flex flex-col">
         {!isCashier && (
-          <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10 no-print">
-            <h2 className="text-lg font-bold text-slate-900 capitalize">
+          <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 sticky top-0 z-10 no-print transition-colors">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white capitalize">
               {navItems.find(i => i.id === activeView)?.label || activeView}
             </h2>
             <div className="flex items-center gap-6">
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-slate-900 staff-name">{systemUser?.name || 'Maria Santos'}</p>
-                <p className="text-xs text-slate-500 uppercase font-bold tracking-widest text-blue-500">{systemUser?.role || 'Store Manager'}</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white staff-name">{systemUser?.name || 'Maria Santos'}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-widest text-blue-500 dark:text-blue-400">{systemUser?.role || 'Store Manager'}</p>
               </div>
-              <div className="w-10 h-10 bg-slate-100 rounded-full border-2 border-white shadow-sm flex items-center justify-center font-bold text-slate-400 uppercase">
+              <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full border-2 border-white dark:border-slate-700 shadow-sm flex items-center justify-center font-bold text-slate-400 uppercase">
                 {systemUser?.name?.[0] || 'M'}
               </div>
             </div>

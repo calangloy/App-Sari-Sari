@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Mail, Phone, MapPin, MoreVertical, Loader2, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Search, Mail, Phone, Users, MapPin, MoreVertical, Loader2, Trash2, Edit2 } from 'lucide-react';
 import { Customer, SystemUser } from '../types';
 import { formatCurrency } from '../lib/utils';
 import { useCollection, dbService } from '../lib/db';
@@ -41,61 +41,81 @@ export const CustomersView = ({ user }: { user: SystemUser | null }) => {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-display">Client Directory</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium tracking-tight">Track consumer relationships and loyalty records</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 dark:bg-blue-500 text-white px-8 py-3 rounded-2xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all shadow-lg shadow-blue-100 dark:shadow-none uppercase text-[10px] font-black tracking-widest active:scale-95"
+          >
+            <Plus size={20} />
+            <span>Register Client</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="relative group max-w-2xl">
+        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 block">Quick Search</label>
+        <div className="relative">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
           <input
             type="text"
-            placeholder="Search customers..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+            placeholder="Search by name, phone, or id..."
+            className="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner transition-all text-slate-900 dark:text-white font-bold placeholder:font-normal"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider"
-        >
-          <Plus size={18} />
-          <span>Add New Customer</span>
-        </button>
       </div>
 
       <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((customer) => (
-          <div key={customer.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 font-bold text-xl group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+          <div key={customer.id} className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-100 dark:hover:border-blue-900 transition-all group relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-[0.03] dark:opacity-[0.07] text-blue-600 dark:text-blue-400 rotate-12">
+              <Users size={120} />
+            </div>
+            <div className="flex justify-between items-start mb-6 relative z-10">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 font-bold text-2xl group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:rotate-6">
                 {customer.name[0]}
               </div>
               <div className="flex gap-1">
                 {isAdmin && (
                   <button 
                     onClick={() => handleDelete(customer.id, customer.name)}
-                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                    className="p-2 text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={20} />
                   </button>
                 )}
               </div>
             </div>
-            <h3 className="font-bold text-lg text-slate-900">{customer.name}</h3>
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-                <Phone size={14} className="text-slate-300" />
-                {customer.phone || 'No phone recorded'}
+            <h3 className="font-bold text-xl text-slate-900 dark:text-white font-display uppercase tracking-tight">{customer.name}</h3>
+            <div className="mt-4 space-y-3 relative z-10">
+              <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400 font-medium">
+                <Phone size={16} className="text-blue-500 dark:text-blue-400" />
+                {customer.phone || 'NO_CONTACT_DATA'}
               </div>
-              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
-                <div className="w-2 h-2 rounded-full bg-green-400 shadow-sm shadow-green-200" />
-                Loyalty: <span className="text-green-600">{customer.points} PTS</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1 bg-green-50 dark:bg-green-900/20 rounded-full border border-green-100 dark:border-green-800/50">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-green-700 dark:text-green-400">
+                    {customer.points} Loyalty Points
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="mt-6 pt-4 border-t border-slate-50 flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Life-time Value</span>
-              <span className="font-black text-slate-900 border-b-2 border-blue-100">{formatCurrency(customer.totalSpent)}</span>
+            <div className="mt-8 pt-6 border-t border-slate-50 dark:border-slate-800 flex justify-between items-end relative z-10">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600 leading-none mb-1">Portfolio Value</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tighter">{formatCurrency(customer.totalSpent)}</p>
+              </div>
+              <div className="text-[10px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-widest">Active Client</div>
             </div>
           </div>
         ))}
