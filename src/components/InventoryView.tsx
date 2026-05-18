@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, Loader2, Package, Download } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, Loader2, Package } from 'lucide-react';
 import { Product, SystemUser } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { useCollection, dbService } from '../lib/db';
 import { orderBy } from 'firebase/firestore';
 import { AddProductModal } from './AddProductModal';
-import { format } from 'date-fns';
 
 export const InventoryView = ({ user }: { user: SystemUser | null }) => {
   const { data: products, loading } = useCollection<Product>('products', orderBy('name'));
@@ -44,32 +43,6 @@ export const InventoryView = ({ user }: { user: SystemUser | null }) => {
     p.barcode.includes(searchTerm)
   );
 
-  const exportToCSV = () => {
-    if (filteredProducts.length === 0) return;
-    
-    const headers = ["ID", "Name", "Barcode", "Category", "Cost Price", "Selling Price", "Stock Level"];
-    const rows = filteredProducts.map(p => [
-      p.id,
-      `"${p.name}"`,
-      p.barcode,
-      p.category,
-      p.costPrice,
-      p.sellingPrice,
-      p.stockLevel
-    ]);
-
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `inventory_report_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -79,47 +52,30 @@ export const InventoryView = ({ user }: { user: SystemUser | null }) => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight font-display">Inventory Control</h1>
-          <p className="text-slate-500 font-medium tracking-tight">Manage your products and monitor stock levels</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={exportToCSV}
-            className="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-6 py-3 rounded-2xl hover:bg-slate-50 transition-all shadow-sm text-[10px] font-black uppercase tracking-[0.2em]"
-          >
-            <Download size={18} />
-            <span>Export Data</span>
-          </button>
-          {isAdmin && (
-            <button 
-              onClick={() => {
-                setEditingProduct(null);
-                setIsModalOpen(true);
-              }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 uppercase text-[10px] font-black tracking-widest active:scale-95"
-            >
-              <Plus size={20} />
-              <span>New Commodity</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="relative group max-w-2xl">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block">Quick Search</label>
-        <div className="relative">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
-            placeholder="Search by name, barcode, or SKU..."
-            className="w-full pl-14 pr-6 py-4 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner transition-all text-slate-900 font-bold placeholder:font-normal"
+            placeholder="Search products by name or barcode..."
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        {isAdmin && (
+          <button 
+            onClick={() => {
+              setEditingProduct(null);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider"
+          >
+            <Plus size={18} />
+            <span>Add New Product</span>
+          </button>
+        )}
       </div>
 
       <AddProductModal 
@@ -128,73 +84,76 @@ export const InventoryView = ({ user }: { user: SystemUser | null }) => {
         product={editingProduct}
       />
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm transition-colors">
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none font-display">Unit Image</th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none font-display">Commodity Identity</th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none font-display">Serial/Barcode</th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none font-display">Classification</th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none font-display text-center">Retail Rate</th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none font-display text-center">Inventory Level</th>
-                {isAdmin && <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none font-display text-right">Operations</th>}
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Image</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Product Details</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Barcode</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Availability</th>
+                {isAdmin && <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Manage</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 transition-colors">
+            <tbody className="divide-y divide-slate-100">
               {filteredProducts.map((product) => (
                 <tr key={product.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-6 py-6">
-                    <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
+                  <td className="px-6 py-4">
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
                       {product.imageUrl ? (
                         <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
                       ) : (
-                        <Package className="text-slate-300" size={24} />
+                        <Package className="text-slate-300" size={18} />
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-6">
-                    <div className="font-bold text-slate-900 text-lg tracking-tight uppercase italic">{product.name}</div>
-                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Ref_{product.id.slice(0,6)}</div>
+                  <td className="px-6 py-4">
+                    <div className="font-bold text-slate-900">{product.name}</div>
                   </td>
-                  <td className="px-6 py-6 text-xs font-mono text-slate-500">{product.barcode}</td>
-                  <td className="px-6 py-6">
-                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-black uppercase bg-slate-100 text-slate-600 tracking-wider border border-slate-200">
+                  <td className="px-6 py-4 text-xs font-mono text-slate-500">{product.barcode}</td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-600 tracking-wider">
                       {product.category}
                     </span>
                   </td>
-                  <td className="px-6 py-6 text-center">
-                    <div className="space-y-1">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sell Price</div>
-                      <div className="text-xl font-bold text-blue-600 font-mono">{formatCurrency(product.sellingPrice)}</div>
+                  <td className="px-6 py-4">
+                    <div className="text-xs">
+                      <span className="text-slate-400 mr-1 uppercase font-bold tracking-tighter">Cost:</span>
+                      <span className="text-slate-600 font-medium">{formatCurrency(product.costPrice)}</span>
+                    </div>
+                    <div className="text-sm font-black mt-0.5">
+                      <span className="text-slate-400 mr-1 uppercase font-bold tracking-tighter">Selling:</span>
+                      <span className="text-blue-600">{formatCurrency(product.sellingPrice)}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-6 text-center">
+                  <td className="px-6 py-4">
                     <div className={cn(
-                      "text-xl font-mono font-bold",
-                      product.stockLevel <= 5 ? "text-red-500" : "text-slate-900"
+                      "text-sm font-black",
+                      product.stockLevel <= 5 ? "text-red-600" : "text-slate-900"
                     )}>
-                      {product.stockLevel}
+                      {product.stockLevel} UNITS
                     </div>
                     {product.stockLevel <= 5 && (
-                      <span className="text-[9px] text-red-500 uppercase font-black tracking-widest block mt-1 animate-pulse">Low Stock</span>
+                      <span className="text-[9px] text-red-500 uppercase font-black tracking-widest block mt-0.5">CRITICAL LOW</span>
                     )}
                   </td>
                   {isAdmin && (
-                    <td className="px-6 py-6 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center gap-1">
                         <button 
                           onClick={() => handleEdit(product)}
-                          className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                         >
-                          <Edit2 size={18} />
+                          <Edit2 size={16} />
                         </button>
                         <button 
                           onClick={() => handleDelete(product.id, product.name)}
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>

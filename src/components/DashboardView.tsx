@@ -118,7 +118,7 @@ export const DashboardView = ({ user }: { user: SystemUser | null }) => {
             </div>
             <div className="mt-4">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1 font-display tracking-tight">
+              <h3 className="text-2xl font-black text-slate-900 mt-1">
                 {typeof stat.value === 'number' && stat.label.includes('Sales') 
                   ? formatCurrency(stat.value) 
                   : stat.value}
@@ -130,9 +130,9 @@ export const DashboardView = ({ user }: { user: SystemUser | null }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Transactions */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-colors">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <h3 className="font-bold text-slate-900 flex items-center gap-2 font-display">
+            <h3 className="font-bold text-slate-900 flex items-center gap-2">
               <Clock size={18} className="text-blue-500" />
               Recent Transactions
             </h3>
@@ -146,36 +146,36 @@ export const DashboardView = ({ user }: { user: SystemUser | null }) => {
                     {tx.customer[0]}
                   </div>
                   <div>
-                    <div className="font-bold text-slate-900 text-sm uppercase italic">{tx.customer}</div>
-                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight font-mono">
+                    <div className="font-bold text-slate-900 text-sm">{tx.customer}</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
                       {tx.time} • {tx.items} items {isAdmin && `• ${tx.method}`}
                     </div>
                   </div>
                 </div>
-                {isAdmin && <div className="font-bold text-slate-900 font-mono">{formatCurrency(tx.total)}</div>}
+                {isAdmin && <div className="font-black text-slate-900">{formatCurrency(tx.total)}</div>}
               </div>
             ))}
           </div>
         </div>
 
         {/* Top Products */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-hidden relative transition-colors">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-hidden relative">
           <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-blue-600 rotate-12">
             <TrendingUp size={120} />
           </div>
-          <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2 font-display">
+          <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2">
             <Package size={18} className="text-blue-500" />
             Top Selling Items
           </h3>
           <div className="space-y-6 relative z-10">
             {topProducts.length > 0 ? topProducts.map((product, i) => (
-              <div key={i} className="space-y-2 group">
+              <div key={i} className="space-y-2">
                 <div className="flex justify-between items-end">
                   <div>
-                    <p className="font-bold text-slate-900 text-sm uppercase tracking-tight">{product.name}</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{product.sold} units sold</p>
+                    <p className="font-bold text-slate-900 text-sm">{product.name}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">{product.sold} units sold</p>
                   </div>
-                  {isAdmin && <p className="font-bold text-slate-900 text-sm font-mono">{formatCurrency(product.revenue)}</p>}
+                  {isAdmin && <p className="font-black text-slate-900 text-sm">{formatCurrency(product.revenue)}</p>}
                 </div>
                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
                   <div 

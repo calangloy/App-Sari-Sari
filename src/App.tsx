@@ -22,9 +22,7 @@ import {
   LayoutDashboard,
   LogOut,
   Loader2,
-  ShieldCheck,
-  Moon,
-  Sun
+  ShieldCheck
 } from 'lucide-react';
 import { cn, formatCurrency } from './lib/utils';
 import { startOfDay } from 'date-fns';
@@ -49,13 +47,6 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [systemUser, setSystemUser] = useState<SystemUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    // Only Cashier mode can forced dark if needed, but per user request "white only database"
-    // We'll disable the global toggle for now to ensure a stable white experience for management.
-    document.documentElement.classList.remove('dark');
-  }, []);
 
   const { data: sales } = useCollection<any>('sales');
   const [dailyTarget, setDailyTarget] = useState(() => Number(localStorage.getItem('dailyTarget')) || 5000);
@@ -161,8 +152,8 @@ export default function App() {
 
   return (
     <div className={cn(
-      "flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden transition-colors duration-300",
-      isCashier && "bg-slate-950 text-white"
+      "flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden",
+      isCashier && "bg-white"
     )}>
       {/* Sidebar Navigation */}
       {!isCashier && (
@@ -263,7 +254,7 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto relative flex flex-col">
         {!isCashier && (
-          <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10 no-print transition-colors">
+          <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10 no-print">
             <h2 className="text-lg font-bold text-slate-900 capitalize">
               {navItems.find(i => i.id === activeView)?.label || activeView}
             </h2>
