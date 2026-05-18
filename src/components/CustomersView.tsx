@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 import { Plus, Search, Mail, Phone, MapPin, MoreVertical, Loader2, Trash2, Edit2 } from 'lucide-react';
-import { Customer } from '../types';
+import { Customer, SystemUser } from '../types';
 import { formatCurrency } from '../lib/utils';
 import { useCollection, dbService } from '../lib/db';
 import { orderBy } from 'firebase/firestore';
 import { AddCustomerModal } from './AddCustomerModal';
 
-export const CustomersView = () => {
+export const CustomersView = ({ user }: { user: SystemUser | null }) => {
   const { data: customers, loading } = useCollection<Customer>('customers', orderBy('name'));
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const isAdmin = user?.role === 'owner' || user?.role === 'admin';
+
   const handleDelete = async (id: string, name: string) => {
+    if (!isAdmin) {
+      alert("Only admins can remove customer records.");
+      return;
+    }
     if (!confirm(`Permanently remove ${name} from records?`)) return;
     try {
       await dbService.remove('customers', id);
@@ -66,12 +72,14 @@ export const CustomersView = () => {
                 {customer.name[0]}
               </div>
               <div className="flex gap-1">
-                <button 
-                  onClick={() => handleDelete(customer.id, customer.name)}
-                  className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                >
-                  <Trash2 size={18} />
-                </button>
+                {isAdmin && (
+                  <button 
+                    onClick={() => handleDelete(customer.id, customer.name)}
+                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
               </div>
             </div>
             <h3 className="font-bold text-lg text-slate-900">{customer.name}</h3>

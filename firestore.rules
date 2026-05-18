@@ -104,8 +104,8 @@ service cloud.firestore {
     // Suppliers
     match /suppliers/{supplierId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidSupplier(incoming());
-      allow update: if isSignedIn() && isValidSupplier(incoming());
+      allow create: if isAdmin() && isValidSupplier(incoming());
+      allow update: if isAdmin() && isValidSupplier(incoming());
       allow delete: if isAdmin();
 
       function isValidSupplier(s) {
@@ -119,8 +119,8 @@ service cloud.firestore {
     // Purchases
     match /purchases/{purchaseId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidPurchase(incoming());
-      allow update: if isSignedIn() && isValidId(purchaseId) && isValidPurchase(incoming())
+      allow create: if isAdmin() && isValidPurchase(incoming());
+      allow update: if isAdmin() && isValidId(purchaseId) && isValidPurchase(incoming())
                     && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'timestamp']);
       allow delete: if isAdmin();
 
@@ -136,7 +136,9 @@ service cloud.firestore {
     // Users
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isOwner() || request.auth.uid == userId;
+      allow create: if isOwner();
+      allow update: if isOwner() || (request.auth.uid == userId && incoming().role == existing().role);
+      allow delete: if isOwner();
     }
   }
 }

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Plus, Search, Mail, Phone, User, Landmark, Loader2, Trash2, Edit2 } from 'lucide-react';
-import { Supplier } from '../types';
+import { Supplier, SystemUser } from '../types';
 import { useCollection, dbService } from '../lib/db';
 import { orderBy } from 'firebase/firestore';
 import { AddSupplierModal } from './AddSupplierModal';
 import { PurchaseOrderModal } from './PurchaseOrderModal';
 import { PurchaseLogModal } from './PurchaseLogModal';
 
-export const SuppliersView = () => {
+export const SuppliersView = ({ user }: { user: SystemUser | null }) => {
   const { data: suppliers, loading } = useCollection<Supplier>('suppliers', orderBy('name'));
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,7 +16,13 @@ export const SuppliersView = () => {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
 
+  const isAdmin = user?.role === 'owner' || user?.role === 'admin';
+
   const openOrder = (supplier: Supplier) => {
+    if (!isAdmin) {
+      alert("Unauthorized: Only managers can place orders.");
+      return;
+    }
     setSelectedSupplier(supplier);
     setIsOrderModalOpen(true);
   };
@@ -98,12 +104,14 @@ export const SuppliersView = () => {
                 </div>
                 <h3 className="font-black text-lg text-slate-900 line-clamp-1">{supplier.name}</h3>
               </div>
-              <button 
-                onClick={() => handleDelete(supplier.id, supplier.name)}
-                className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-              >
-                <Trash2 size={18} />
-              </button>
+              {isAdmin && (
+                <button 
+                  onClick={() => handleDelete(supplier.id, supplier.name)}
+                  className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 size={18} />
+                </button>
+              )}
             </div>
             
             <div className="space-y-3">

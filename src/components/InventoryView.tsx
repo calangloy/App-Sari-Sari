@@ -1,18 +1,24 @@
 import { useState } from 'react';
 import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, Loader2, Package } from 'lucide-react';
-import { Product } from '../types';
+import { Product, SystemUser } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { useCollection, dbService } from '../lib/db';
 import { orderBy } from 'firebase/firestore';
 import { AddProductModal } from './AddProductModal';
 
-export const InventoryView = () => {
+export const InventoryView = ({ user }: { user: SystemUser | null }) => {
   const { data: products, loading } = useCollection<Product>('products', orderBy('name'));
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
+  const isAdmin = user?.role === 'owner' || user?.role === 'admin';
+
   const handleDelete = async (id: string, name: string) => {
+    if (!isAdmin) {
+      alert("Permission denied. Only admins can delete products.");
+      return;
+    }
     if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
     try {
       await dbService.remove('products', id);
@@ -58,16 +64,18 @@ export const InventoryView = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button 
-          onClick={() => {
-            setEditingProduct(null);
-            setIsModalOpen(true);
-          }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider"
-        >
-          <Plus size={18} />
-          <span>Add New Product</span>
-        </button>
+        {isAdmin && (
+          <button 
+            onClick={() => {
+              setEditingProduct(null);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider"
+          >
+            <Plus size={18} />
+            <span>Add New Product</span>
+          </button>
+        )}
       </div>
 
       <AddProductModal 
@@ -87,7 +95,7 @@ export const InventoryView = () => {
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Availability</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Manage</th>
+                {isAdmin && <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Manage</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -132,22 +140,24 @@ export const InventoryView = () => {
                       <span className="text-[9px] text-red-500 uppercase font-black tracking-widest block mt-0.5">CRITICAL LOW</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center gap-1">
-                      <button 
-                        onClick={() => handleEdit(product)}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(product.id, product.name)}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
+                  {isAdmin && (
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={() => handleEdit(product)}
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(product.id, product.name)}
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

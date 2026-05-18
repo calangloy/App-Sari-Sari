@@ -11,15 +11,17 @@ import {
 } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
 import { useCollection } from '../lib/db';
-import { Product, Sale } from '../types';
+import { Product, Sale, SystemUser } from '../types';
 import { orderBy, limit, Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 
-export const DashboardView = () => {
+export const DashboardView = ({ user }: { user: SystemUser | null }) => {
   const { data: sales, loading: salesLoading } = useCollection<Sale>('sales', orderBy('timestamp', 'desc'));
   const { data: products, loading: productsLoading } = useCollection<Product>('products');
   const { data: customers, loading: customersLoading } = useCollection<any>('customers');
   const [dailyTarget, setDailyTarget] = useState(5000); // Default target
+
+  const isAdmin = user?.role === 'owner' || user?.role === 'admin';
 
   useEffect(() => {
     const savedTarget = localStorage.getItem('dailyTarget');
@@ -50,8 +52,8 @@ export const DashboardView = () => {
   const stats = [
     { 
       label: 'Total Sales (Today)', 
-      value: totalRevenueToday, 
-      delta: `${targetProgress.toFixed(1)}% of Target`, 
+      value: isAdmin ? totalRevenueToday : '••••', 
+      delta: isAdmin ? `${targetProgress.toFixed(1)}% of Target` : 'Restricted', 
       isUp: targetProgress >= 100, 
       icon: DollarSign, 
       color: 'bg-blue-50 text-blue-600' 
@@ -146,11 +148,11 @@ export const DashboardView = () => {
                   <div>
                     <div className="font-bold text-slate-900 text-sm">{tx.customer}</div>
                     <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
-                      {tx.time} • {tx.items} items • {tx.method}
+                      {tx.time} • {tx.items} items {isAdmin && `• ${tx.method}`}
                     </div>
                   </div>
                 </div>
-                <div className="font-black text-slate-900">{formatCurrency(tx.total)}</div>
+                {isAdmin && <div className="font-black text-slate-900">{formatCurrency(tx.total)}</div>}
               </div>
             ))}
           </div>
@@ -173,7 +175,7 @@ export const DashboardView = () => {
                     <p className="font-bold text-slate-900 text-sm">{product.name}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase">{product.sold} units sold</p>
                   </div>
-                  <p className="font-black text-slate-900 text-sm">{formatCurrency(product.revenue)}</p>
+                  {isAdmin && <p className="font-black text-slate-900 text-sm">{formatCurrency(product.revenue)}</p>}
                 </div>
                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
                   <div 

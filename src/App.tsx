@@ -107,12 +107,15 @@ export default function App() {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'pos', label: 'Point of Sale', icon: ShoppingCart },
     { id: 'inventory', label: 'Inventory', icon: Package },
-    { id: 'sales', label: 'Sales Reports', icon: BarChart3 },
     { id: 'customers', label: 'Customers', icon: Users },
-    { id: 'suppliers', label: 'Suppliers', icon: Truck },
   ];
 
   if (systemUser?.role === 'owner' || systemUser?.role === 'admin') {
+    navItems.push({ id: 'sales', label: 'Sales Reports', icon: BarChart3 });
+    navItems.push({ id: 'suppliers', label: 'Suppliers', icon: Truck });
+  }
+
+  if (systemUser?.role === 'owner') {
     navItems.push({ id: 'admin', label: 'Team', icon: ShieldCheck });
   }
 
@@ -180,18 +183,20 @@ export default function App() {
         )}
 
         <div className="p-4 border-t border-slate-700 space-y-2">
-          <button
-            onClick={() => setActiveView('settings')}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group",
-              activeView === 'settings' 
-                ? "bg-blue-600 text-white" 
-                : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-            )}
-          >
-            <Settings size={20} className="shrink-0" />
-            {isSidebarOpen && <span className="text-sm">Settings</span>}
-          </button>
+          {(systemUser?.role === 'owner' || systemUser?.role === 'admin') && (
+            <button
+              onClick={() => setActiveView('settings')}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group",
+                activeView === 'settings' 
+                  ? "bg-blue-600 text-white" 
+                  : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+              )}
+            >
+              <Settings size={20} className="shrink-0" />
+              {isSidebarOpen && <span className="text-sm">Settings</span>}
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group text-slate-400 hover:bg-red-900/20 hover:text-red-400"
@@ -237,14 +242,24 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {activeView === 'dashboard' && <DashboardView />}
+              {activeView === 'dashboard' && <DashboardView user={systemUser} />}
               {activeView === 'pos' && <POSView />}
-              {activeView === 'inventory' && <InventoryView />}
-              {activeView === 'sales' && <Sales />}
-              {activeView === 'customers' && <CustomersView />}
-              {activeView === 'suppliers' && <SuppliersView />}
-              {activeView === 'settings' && <SettingsView />}
-              {activeView === 'admin' && <AdminManagementView />}
+              {activeView === 'inventory' && <InventoryView user={systemUser} />}
+              {activeView === 'sales' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <Sales />}
+              {activeView === 'customers' && <CustomersView user={systemUser} />}
+              {activeView === 'suppliers' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <SuppliersView user={systemUser} />}
+              {activeView === 'settings' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <SettingsView user={systemUser} />}
+              {activeView === 'admin' && systemUser?.role === 'owner' && <AdminManagementView />}
+              {/* Fallback for unauthorized access */}
+              {((activeView === 'sales' || activeView === 'suppliers' || activeView === 'settings') && 
+                systemUser?.role === 'cashier') || 
+                (activeView === 'admin' && systemUser?.role !== 'owner') ? (
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                  <ShieldCheck className="text-red-500 mb-4" size={64} />
+                  <h2 className="text-2xl font-bold text-slate-900">Restricted Access</h2>
+                  <p className="text-slate-500 mt-2">You do not have permission to view this section.</p>
+                </div>
+              ) : null}
             </motion.div>
           </AnimatePresence>
         </div>
