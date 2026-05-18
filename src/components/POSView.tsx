@@ -18,13 +18,14 @@ import {
   Barcode,
   ShoppingBag
 } from 'lucide-react';
-import { Product, SaleItem } from '../types';
+import { Product, SaleItem, SystemUser } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { Scanner } from './Scanner';
 import { useCollection, dbService } from '../lib/db';
 import { orderBy, serverTimestamp } from 'firebase/firestore';
 
-export const POSView = () => {
+export const POSView = ({ user }: { user: SystemUser | null }) => {
+  const isCashierMode = user?.role === 'cashier';
   const { data: products, loading } = useCollection<Product>('products', orderBy('name'));
   const { data: storeSettingsData } = useCollection<any>('settings');
   const storeSettings = storeSettingsData.find(s => s.id === 'store') || {
@@ -199,7 +200,7 @@ export const POSView = () => {
     setLastTransaction(null);
   };
 
-  const categories = ['All', 'Drinks', 'Snacks', 'Canned Goods', 'Biscuits', 'Milk', 'Ingredients', 'Household', 'Groceries', 'Personal Care'];
+  const categories = ['All', 'Drinks', 'Snacks', 'Canned Goods', 'Biscuits', 'Milk', 'Ingredients', 'Household', 'Groceries', 'Personal Care', 'Rice & Grains', 'Frozen Food', 'Bakery', 'Stationery', 'Medicine'];
   const [activeCategory, setActiveCategory] = useState('All');
 
   if (loading) {
@@ -210,6 +211,277 @@ export const POSView = () => {
     );
   }
 
+  // PROFESSIONAL CASHIER MODE
+  if (isCashierMode) {
+    return (
+      <div className="h-full bg-slate-900 text-white flex flex-col font-mono overflow-hidden">
+        {/* Banner with Store Info & Time */}
+        <div className="bg-slate-800 border-b border-slate-700 px-8 py-3 flex justify-between items-center no-print">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-black tracking-tighter text-blue-400 uppercase">{storeSettings.name}</h1>
+            <span className="text-[10px] text-slate-400 bg-slate-700 px-2 py-0.5 rounded">STATION 01</span>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-bold">{new Date().toLocaleTimeString()}</p>
+            <p className="text-[10px] text-slate-400">{new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+
+        <div className="flex-1 flex overflow-hidden no-print">
+          {/* Main Transaction Area */}
+          <div className="flex-1 flex flex-col border-r border-slate-800">
+            {/* Real-time Scanning Input */}
+            <div className="p-8 bg-slate-800/50">
+              <div className="relative group">
+                <Scan className="absolute left-6 top-1/2 -translate-y-1/2 text-blue-400 group-focus-within:animate-pulse" size={32} />
+                <form onSubmit={handleManualScan}>
+                  <input
+                    ref={manualInputRef}
+                    autoFocus
+                    type="text"
+                    placeholder="SCANNIN READY..."
+                    className="w-full pl-20 pr-8 py-8 bg-slate-900 border-2 border-slate-700 rounded-2xl focus:border-blue-500 transition-all text-4xl font-black text-white focus:outline-none placeholder:text-slate-800 tracking-tighter"
+                    value={manualEntry}
+                    onChange={(e) => setManualEntry(e.target.value)}
+                  />
+                </form>
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-bold uppercase flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  Connected
+                </div>
+              </div>
+            </div>
+
+            {/* List of scanned items (Professional Table Style) */}
+            <div className="flex-1 overflow-auto px-8 py-4">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-slate-900 z-10">
+                  <tr className="text-left text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">
+                    <th className="py-4">Description</th>
+                    <th className="py-4 text-center">Unit Price</th>
+                    <th className="py-4 text-center">Qty</th>
+                    <th className="py-4 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {cart.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-24 text-center">
+                        <ShoppingBag size={64} className="mx-auto text-slate-800 mb-4 opacity-20" />
+                        <p className="text-slate-700 font-bold tracking-widest text-sm">WAITING FOR SCANS</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    cart.map((item) => (
+                      <tr key={item.productId} className="animate-in fade-in slide-in-from-left-4">
+                        <td className="py-6">
+                          <div className="font-black text-xl text-white tracking-tight">{item.name}</div>
+                          <div className="text-[10px] text-slate-500 font-bold mt-1">ID: {item.productId.slice(0,8)}</div>
+                        </td>
+                        <td className="py-6 text-center text-slate-400 font-bold">{formatCurrency(item.price)}</td>
+                        <td className="py-6">
+                          <div className="flex items-center justify-center gap-4">
+                            <button onClick={() => updateQuantity(item.productId, -1)} className="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center hover:bg-slate-700">-</button>
+                            <span className="text-2xl font-black text-blue-400 w-12 text-center">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.productId, 1)} className="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center hover:bg-slate-700">+</button>
+                          </div>
+                        </td>
+                        <td className="py-6 text-right font-black text-2xl text-white">
+                          {formatCurrency(item.price * item.quantity)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Checkout / Totals Panel */}
+          <div className="w-[450px] bg-slate-800 flex flex-col p-8 border-l border-slate-700">
+            <div className="flex-1 space-y-8">
+              <div className="space-y-4">
+                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Current Transaction</p>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-xl text-slate-400 font-bold">
+                    <span>Items Count</span>
+                    <span>{cart.reduce((s, i) => s + i.quantity, 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-xl text-slate-400 font-bold">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-xl text-slate-400 font-bold">
+                    <span>Tax (VAT)</span>
+                    <span>{formatCurrency(tax)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-8 border-t border-slate-700">
+                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase mb-4">Total Amount Due</p>
+                <h2 className="text-[5rem] font-black tracking-tighter leading-none text-blue-400 mb-2">
+                  {formatCurrency(total)}
+                </h2>
+                <div className="text-slate-500 font-bold italic">
+                  * All amounts in Philippine Peso (PHP)
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Payment Method</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => setPaymentMethod('cash')}
+                    className={cn(
+                      "flex items-center gap-3 px-6 py-4 rounded-2xl border-2 transition-all font-black text-sm uppercase tracking-widest",
+                      paymentMethod === 'cash' ? "bg-white text-slate-900 border-white shadow-xl shadow-white/5" : "bg-slate-900 text-slate-400 border-slate-700"
+                    )}
+                  >
+                    <Banknote size={20} />
+                    Cash
+                  </button>
+                  <button 
+                     onClick={() => setPaymentMethod('e-wallet')}
+                     className={cn(
+                        "flex items-center gap-3 px-6 py-4 rounded-2xl border-2 transition-all font-black text-sm uppercase tracking-widest",
+                        paymentMethod === 'e-wallet' ? "bg-blue-500 text-white border-blue-400 shadow-xl shadow-blue-500/10" : "bg-slate-900 text-slate-400 border-slate-700"
+                      )}
+                  >
+                    <Wallet size={20} />
+                    GCash
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-8 space-y-4">
+              <button
+                onClick={handleCheckout}
+                disabled={cart.length === 0 || isProcessing}
+                className="w-full bg-blue-500 text-white py-8 rounded-3xl font-black text-2xl uppercase tracking-widest shadow-2xl shadow-blue-500/20 hover:bg-blue-400 active:scale-95 transition-all flex items-center justify-center gap-4"
+              >
+                {isProcessing ? <Loader2 className="animate-spin" size={32} /> : <Receipt size={32} />}
+                COMPLETE SALE
+              </button>
+              <button 
+                onClick={() => setCart([])}
+                className="w-full py-4 text-slate-500 font-black uppercase text-[10px] tracking-widest hover:text-red-400 transition-colors"
+                disabled={cart.length === 0}
+              >
+                Cancel Transaction [ESC]
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Receipt / Success Modals should still appear above this */}
+        {showReceipt && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-xl no-print">
+            <div className="bg-white rounded-[3rem] p-12 max-w-md w-full shadow-2xl text-center space-y-8 animate-in zoom-in-95 duration-300">
+              <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle2 size={48} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">SUCCESS!</h3>
+                <p className="text-slate-500 font-medium tracking-tight">Printing customer receipt...</p>
+              </div>
+              
+              <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-left space-y-4">
+                <div className="flex justify-between text-xs font-black text-slate-400 uppercase tracking-widest">
+                  <span>Reference:</span>
+                  <span className="text-slate-900">{lastTransaction?.orderId}</span>
+                </div>
+                <div className="flex justify-between text-4xl font-black text-slate-900 pt-4 border-t border-slate-200">
+                  <span>TOTAL:</span>
+                  <span>{formatCurrency(lastTransaction?.total || 0)}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={finishTransaction}
+                className="w-full bg-slate-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-slate-800 transition-all shadow-xl active:scale-95"
+              >
+                Open Next Register
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Re-use Thermal Receipt Print Layout */}
+        <div className="hidden print:block print:w-full print:bg-white text-black font-mono p-4 print-container">
+          <div className="text-center space-y-1 mb-4">
+            {storeSettings.logoUrl && (
+              <div className="flex justify-center mb-2">
+                <img src={storeSettings.logoUrl} alt="Store Logo" className="h-12 w-auto object-contain" referrerPolicy="no-referrer" />
+              </div>
+            )}
+            <h1 className="text-lg font-bold uppercase">{storeSettings.name}</h1>
+            <p className="text-xs">{storeSettings.address}</p>
+            <p className="text-xs">TEL: {storeSettings.phone}</p>
+            <p className="text-[10px]">TIN: 000-123-456-000</p>
+          </div>
+          
+          <div className="border-t border-b border-black py-2 my-2 space-y-1 text-xs">
+            <div className="flex justify-between">
+              <span>DATE: {new Date().toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>ORDER ID: {lastTransaction?.orderId}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>CASHIER: {user?.name || 'Staff Member'}</span>
+            </div>
+          </div>
+
+          <table className="w-full text-xs text-left mb-4">
+            <thead>
+              <tr className="border-b border-black">
+                <th className="py-1">ITEM</th>
+                <th className="py-1 text-right">QTY</th>
+                <th className="py-1 text-right">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(lastTransaction?.items || []).map((item: any, i: number) => (
+                <tr key={i}>
+                  <td className="py-1 uppercase">{item.name}</td>
+                  <td className="py-1 text-right">x{item.quantity}</td>
+                  <td className="py-1 text-right">{formatCurrency(item.price * item.quantity)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="border-t border-black pt-2 space-y-1 text-xs">
+            <div className="flex justify-between">
+              <span>SUBTOTAL:</span>
+              <span>{formatCurrency(lastTransaction?.subtotal || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>TAX/VAT:</span>
+              <span>{formatCurrency(lastTransaction?.tax || 0)}</span>
+            </div>
+            <div className="flex justify-between text-sm font-bold pt-1 border-t border-black">
+              <span>TOTAL:</span>
+              <span>{formatCurrency(lastTransaction?.total || 0)}</span>
+            </div>
+            <div className="flex justify-between pt-1">
+              <span>METHOD:</span>
+              <span>{lastTransaction?.paymentMethod?.toUpperCase()}</span>
+            </div>
+          </div>
+
+          <div className="text-center mt-6 text-[10px]">
+            <p className="font-bold">THANK YOU FOR YOUR BUSINESS!</p>
+            <p>SariSari Pro POS Systems</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // STANDARD OWNER/ADMIN POS VIEW
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-180px)]">
       {/* Product Selection */}

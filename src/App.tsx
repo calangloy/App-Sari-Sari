@@ -48,6 +48,17 @@ export default function App() {
   const [systemUser, setSystemUser] = useState<SystemUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  const { data: sales } = useCollection<any>('sales');
+  const [dailyTarget, setDailyTarget] = useState(() => Number(localStorage.getItem('dailyTarget')) || 5000);
+
+  useEffect(() => {
+    const handleStorage = () => {
+      setDailyTarget(Number(localStorage.getItem('dailyTarget')) || 5000);
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   // Auto-switch to POS for cashiers
   useEffect(() => {
     if (systemUser?.role === 'cashier') {
@@ -127,17 +138,6 @@ export default function App() {
   }
 
   const isCashier = systemUser?.role === 'cashier';
-
-  const { data: sales } = useCollection<any>('sales');
-  const [dailyTarget, setDailyTarget] = useState(() => Number(localStorage.getItem('dailyTarget')) || 5000);
-
-  useEffect(() => {
-    const handleStorage = () => {
-      setDailyTarget(Number(localStorage.getItem('dailyTarget')) || 5000);
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
 
   const totalRevenueToday = sales
     .filter(s => {
@@ -284,7 +284,7 @@ export default function App() {
               className={cn(isCashier && "h-full")}
             >
               {activeView === 'dashboard' && <DashboardView user={systemUser} />}
-              {activeView === 'pos' && <POSView />}
+              {activeView === 'pos' && <POSView user={systemUser} />}
               {activeView === 'inventory' && <InventoryView user={systemUser} />}
               {activeView === 'sales' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <SalesView />}
               {activeView === 'customers' && <CustomersView user={systemUser} />}

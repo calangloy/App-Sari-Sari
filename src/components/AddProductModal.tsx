@@ -217,6 +217,11 @@ export const AddProductModal = ({ isOpen, onClose, product }: AddProductModalPro
                       <option value="Household">Household</option>
                       <option value="Groceries">Groceries</option>
                       <option value="Personal Care">Personal Care</option>
+                      <option value="Rice & Grains">Rice & Grains</option>
+                      <option value="Frozen Food">Frozen Food</option>
+                      <option value="Bakery">Bakery</option>
+                      <option value="Stationery">Stationery</option>
+                      <option value="Medicine">Medicine</option>
                     </select>
                   </div>
                 </div>

@@ -24,8 +24,8 @@ export const SalesView = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredSales = sales.filter(sale => {
-    if (!sale.timestamp) return false;
-    const saleDate = (sale.timestamp as Timestamp).toDate();
+    // If timestamp is not yet set by server, treat as 'now' for filtering
+    const saleDate = sale.timestamp ? (sale.timestamp as Timestamp).toDate() : new Date();
     const now = new Date();
 
     let isInDateRange = true;
