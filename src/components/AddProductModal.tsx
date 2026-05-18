@@ -213,6 +213,10 @@ export const AddProductModal = ({ isOpen, onClose, product }: AddProductModalPro
                       <option value="Canned Goods">Canned Goods</option>
                       <option value="Biscuits">Biscuits</option>
                       <option value="Milk">Milk</option>
+                      <option value="Ingredients">Ingredients</option>
+                      <option value="Household">Household</option>
+                      <option value="Groceries">Groceries</option>
+                      <option value="Personal Care">Personal Care</option>
                     </select>
                   </div>
                 </div>
@@ -265,15 +269,14 @@ export const AddProductModal = ({ isOpen, onClose, product }: AddProductModalPro
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <Truck size={12} /> Supplier
+                      <Truck size={12} /> Supplier (Optional)
                     </label>
                     <select
-                      required
                       value={formData.supplierId}
                       onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
                       className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700"
                     >
-                      <option value="">Choose Supplier</option>
+                      <option value="">No Supplier / Unknown</option>
                       {suppliers.map(s => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}

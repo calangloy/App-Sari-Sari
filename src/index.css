@@ -2,17 +2,38 @@
 
 @layer base {
   @media print {
-    .no-print {
-      display: none !important;
+    @page {
+      margin: 0;
+      size: 80mm auto; /* Standard thermal receipt width */
     }
     body {
       background: white !important;
       padding: 0 !important;
       margin: 0 !important;
     }
-    /* Hide everything except the receipt during print */
-    #root > div:not(.print-container) {
+    .no-print {
       display: none !important;
+    }
+    /* Hide everything by default */
+    body * {
+      visibility: hidden;
+      height: 0;
+      overflow: hidden;
+    }
+    /* Show ONLY the print container */
+    .print-container, .print-container * {
+      visibility: visible;
+      height: auto;
+      overflow: visible;
+    }
+    .print-container {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 4mm !important;
+      display: block !important;
     }
   }
 }

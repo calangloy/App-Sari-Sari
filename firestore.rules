@@ -54,17 +54,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       function isValidProduct(p) {
-        return p.keys().hasAll(['name', 'barcode', 'costPrice', 'sellingPrice', 'stockLevel', 'category', 'supplierId', 'updatedAt'])
-               && (p.keys().size() == 8 || (p.keys().size() == 9 && p.keys().hasAll(['imageUrl'])))
+        return p.keys().hasAll(['name', 'barcode', 'costPrice', 'sellingPrice', 'stockLevel', 'category', 'updatedAt'])
                && p.name is string && p.name.size() > 0 && p.name.size() <= 200
                && p.barcode is string && p.barcode.size() <= 64
                && p.costPrice is number && p.costPrice >= 0
                && p.sellingPrice is number && p.sellingPrice >= 0
                && p.stockLevel is number
                && p.category is string && p.category.size() <= 100
-               && p.supplierId is string && p.supplierId.size() <= 128
                && p.updatedAt == request.time
-               && (p.imageUrl == null || (p.imageUrl is string && p.imageUrl.size() <= 1048576)); // Allow image data up to 1MB (base64)
+               && (p.imageUrl == null || (p.imageUrl is string && p.imageUrl.size() <= 1048576))
+               && (!p.keys().hasAll(['supplierId']) || (p.supplierId == null || (p.supplierId is string && p.supplierId.size() <= 128)));
       }
     }
 
@@ -75,8 +74,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
       
       function isValidSale(s) {
-        return s.keys().hasAll(['items', 'total', 'paymentMethod', 'timestamp'])
-               && s.keys().size() >= 4
+        return s.keys().hasAll(['items', 'total', 'paymentMethod', 'timestamp', 'orderId'])
                && s.items is list && s.items.size() > 0 && s.items.size() <= 50
                && s.total is number && s.total >= 0
                && s.paymentMethod in ['cash', 'card', 'e-wallet']
@@ -131,6 +129,12 @@ service cloud.firestore {
                && p.status in ['pending', 'received', 'cancelled']
                && p.timestamp == request.time;
       }
+    }
+
+    // Settings
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     // Users

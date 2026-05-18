@@ -23,9 +23,36 @@ import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 
 export const SettingsView = ({ user }: { user: SystemUser | null }) => {
+  const { data: storeSettingsData } = useCollection<any>('settings');
+  const storeSettings = storeSettingsData.find(s => s.id === 'store') || {
+    name: 'Sari-Sari Pro Store',
+    address: '123 Market Street, City',
+    phone: '0917-000-0000',
+    logoUrl: '',
+    taxRate: 0.12 // 12% default VAT
+  };
+
   const [isSeeding, setIsSeeding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [dailyTarget, setDailyTarget] = useState(() => Number(localStorage.getItem('dailyTarget')) || 5000);
+
+  const saveStoreSettings = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const updated = {
+      name: formData.get('name') as string,
+      address: formData.get('address') as string,
+      phone: formData.get('phone') as string,
+      logoUrl: formData.get('logoUrl') as string,
+      taxRate: Number(formData.get('taxRate'))
+    };
+    try {
+      await dbService.set('settings', 'store', updated);
+      alert("Store identity updated successfully!");
+    } catch (err) {
+      alert("Failed to update store settings.");
+    }
+  };
 
   const saveTarget = () => {
     localStorage.setItem('dailyTarget', dailyTarget.toString());
@@ -48,7 +75,9 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
            await dbService.remove(coll, doc.id);
          }
       }
-      alert("Database wiped successfully.");
+      localStorage.removeItem('dailyTarget');
+      localStorage.removeItem('dailyTarget_progress'); 
+      alert("Database wiped successfully. Settings reset.");
       window.location.reload();
     } catch (error) {
       console.error(error);
@@ -104,6 +133,73 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
 
   return (
     <div className="max-w-4xl space-y-8 animate-in fade-in duration-500">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="font-bold text-slate-900 flex items-center gap-2">
+            <ShieldCheck size={18} className="text-blue-500" />
+            Store Identity & Receipt
+          </h2>
+        </div>
+        <div className="p-8">
+          <form onSubmit={saveStoreSettings} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Name</label>
+                <input 
+                  name="name"
+                  defaultValue={storeSettings.name}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact Number</label>
+                <input 
+                  name="phone"
+                  defaultValue={storeSettings.phone}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Address</label>
+                <input 
+                  name="address"
+                  defaultValue={storeSettings.address}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:font-normal"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo URL (Optional)</label>
+                <input 
+                  name="logoUrl"
+                  defaultValue={storeSettings.logoUrl}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">VAT/Tax Rate (%)</label>
+                <input 
+                  type="number"
+                  step="0.01"
+                  name="taxRate"
+                  defaultValue={storeSettings.taxRate}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button 
+                type="submit"
+                className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-blue-700 transition-shadow shadow-lg shadow-blue-200 flex items-center gap-2"
+              >
+                <Save size={16} />
+                Save Store Details
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 bg-slate-50/50">
           <h2 className="font-bold text-slate-900 flex items-center gap-2">

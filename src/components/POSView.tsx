@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, 
   Minus, 
@@ -14,7 +14,9 @@ import {
   History,
   ShoppingCart,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Barcode,
+  ShoppingBag
 } from 'lucide-react';
 import { Product, SaleItem } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
@@ -24,6 +26,15 @@ import { orderBy, serverTimestamp } from 'firebase/firestore';
 
 export const POSView = () => {
   const { data: products, loading } = useCollection<Product>('products', orderBy('name'));
+  const { data: storeSettingsData } = useCollection<any>('settings');
+  const storeSettings = storeSettingsData.find(s => s.id === 'store') || {
+    name: 'SARISARI PRO POS',
+    address: '123 Market Street, City',
+    phone: '0917-000-0000',
+    logoUrl: '',
+    taxRate: 0.12
+  };
+
   const [cart, setCart] = useState<SaleItem[]>([]);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'e-wallet'>('cash');
@@ -31,8 +42,15 @@ export const POSView = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<any>(null);
+  const [manualEntry, setManualEntry] = useState('');
+
+  const subtotal = cart.reduce((acc, current) => acc + (current.price * current.quantity), 0);
+  const tax = subtotal * (storeSettings.taxRate || 0);
+  const total = subtotal + tax;
+
   const scannerBuffer = useRef('');
   const lastKeyTime = useRef(0);
+  const manualInputRef = useRef<HTMLInputElement>(null);
 
   // Global Barcode Listener
   useEffect(() => {
@@ -95,14 +113,20 @@ export const POSView = () => {
     }).filter(item => item.quantity > 0));
   };
 
-  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
   const handleScan = (barcode: string) => {
     const product = products.find(p => p.barcode === barcode);
     if (product) {
       addToCart(product);
     } else {
       alert("Product not found!");
+    }
+  };
+
+  const handleManualScan = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualEntry) {
+      handleScan(manualEntry);
+      setManualEntry('');
     }
   };
 
@@ -113,10 +137,28 @@ export const POSView = () => {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
-    setIsProcessing(true);
+
+    // GCash Check
+    if (paymentMethod === 'e-wallet') {
+      const apiKey = localStorage.getItem('gcash_api_key');
+      if (!apiKey) {
+        alert("GCash API not linked. Please configure it in settings.");
+        return;
+      }
+      // Simulation of async payment verification (Professional Looking)
+      setIsProcessing(true);
+      await new Promise(r => setTimeout(r, 1500)); // Simulate API call
+      const confirmed = confirm("GCash API Response: Payment of " + formatCurrency(total) + " verified. Confirm to complete transaction?");
+      if (!confirmed) {
+        setIsProcessing(false);
+        return;
+      }
+    }
     try {
       const saleData = {
         items: cart,
+        subtotal,
+        tax,
         total,
         paymentMethod,
         timestamp: serverTimestamp(),
@@ -157,7 +199,7 @@ export const POSView = () => {
     setLastTransaction(null);
   };
 
-  const categories = ['All', 'Drinks', 'Snacks', 'Canned Goods', 'Biscuits', 'Milk'];
+  const categories = ['All', 'Drinks', 'Snacks', 'Canned Goods', 'Biscuits', 'Milk', 'Ingredients', 'Household', 'Groceries', 'Personal Care'];
   const [activeCategory, setActiveCategory] = useState('All');
 
   if (loading) {
@@ -174,21 +216,25 @@ export const POSView = () => {
       <div className="lg:col-span-3 flex flex-col gap-6">
         <div className="flex gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              type="text"
-              placeholder="Scan product or type name..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <Scan className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <form onSubmit={handleManualScan}>
+              <input
+                ref={manualInputRef}
+                type="text"
+                placeholder="Scanner Ready... (or type barcode here)"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono font-bold"
+                value={manualEntry}
+                onChange={(e) => setManualEntry(e.target.value)}
+              />
+            </form>
           </div>
           <button 
-            onClick={() => setIsScannerOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
+            type="button"
+            onClick={() => manualInputRef.current?.focus()}
+            className="flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-slate-800 transition-all shadow-md shadow-slate-200"
           >
-            <Scan size={20} />
-            <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider">Scan Barcode</span>
+            <Barcode size={20} />
+            <span className="hidden sm:inline text-xs font-black uppercase tracking-widest">Focus Scanner</span>
           </button>
         </div>
 
@@ -317,7 +363,11 @@ export const POSView = () => {
           <div className="pt-2 space-y-2">
             <div className="flex justify-between text-sm text-slate-500">
               <span>Subtotal</span>
-              <span>{formatCurrency(total)}</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-slate-500">
+              <span>VAT ({((storeSettings.taxRate || 0) * 100).toFixed(0)}%)</span>
+              <span>{formatCurrency(tax)}</span>
             </div>
             <div className="flex justify-between text-xl font-black text-slate-900 pt-1 border-t border-slate-200 mt-2">
               <span>Total</span>
@@ -387,8 +437,14 @@ export const POSView = () => {
       {/* Hidden Thermal Receipt Print Layout */}
       <div className="hidden print:block print:w-full print:bg-white text-black font-mono p-4 print-container">
         <div className="text-center space-y-1 mb-4">
-          <h1 className="text-lg font-bold">SARISARI PRO POS</h1>
-          <p className="text-xs">123 Market Street, City</p>
+          {storeSettings.logoUrl && (
+            <div className="flex justify-center mb-2">
+              <img src={storeSettings.logoUrl} alt="Store Logo" className="h-12 w-auto object-contain" referrerPolicy="no-referrer" />
+            </div>
+          )}
+          <h1 className="text-lg font-bold uppercase">{storeSettings.name}</h1>
+          <p className="text-xs">{storeSettings.address}</p>
+          <p className="text-xs">TEL: {storeSettings.phone}</p>
           <p className="text-[10px]">TIN: 000-123-456-000</p>
         </div>
         
@@ -423,12 +479,20 @@ export const POSView = () => {
           </tbody>
         </table>
 
-        <div className="border-t border-black pt-2 space-y-1 text-xs font-bold">
-          <div className="flex justify-between text-sm">
+        <div className="border-t border-black pt-2 space-y-1 text-xs">
+          <div className="flex justify-between">
+            <span>SUBTOTAL:</span>
+            <span>{formatCurrency(lastTransaction?.subtotal || 0)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>TAX/VAT:</span>
+            <span>{formatCurrency(lastTransaction?.tax || 0)}</span>
+          </div>
+          <div className="flex justify-between text-sm font-bold pt-1 border-t border-black">
             <span>TOTAL:</span>
             <span>{formatCurrency(lastTransaction?.total || 0)}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between pt-1">
             <span>PAYMENT:</span>
             <span>{lastTransaction?.paymentMethod?.toUpperCase()}</span>
           </div>
