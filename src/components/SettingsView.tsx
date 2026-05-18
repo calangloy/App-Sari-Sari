@@ -142,6 +142,52 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="font-bold text-slate-900 flex items-center gap-2">
+            <Smartphone size={18} className="text-blue-500" />
+            E-Wallet Integrations
+          </h2>
+        </div>
+        <div className="p-8 space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="font-bold text-slate-900">GCash Business API</h3>
+                <p className="text-sm text-slate-500">Link your GCash account to verify payments automatically.</p>
+              </div>
+              <div className={cn(
+                "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
+                localStorage.getItem('gcash_api_key') ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"
+              )}>
+                {localStorage.getItem('gcash_api_key') ? 'Connected' : 'Not Linked'}
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Merchant API Key</label>
+                <input 
+                  type="password" 
+                  placeholder="pk_live_************************"
+                  defaultValue={localStorage.getItem('gcash_api_key') || ''}
+                  onChange={(e) => {
+                    if (e.target.value) localStorage.setItem('gcash_api_key', e.target.value);
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                />
+              </div>
+              <button 
+                onClick={() => alert("GCash API Configuration Saved!")}
+                className="self-end bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-blue-700 transition-all"
+              >
+                Link Account
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
           <h2 className="font-bold text-slate-900 flex items-center gap-1.5">
             <TrendingUp size={18} className="text-blue-500" />
             Performance & Targets

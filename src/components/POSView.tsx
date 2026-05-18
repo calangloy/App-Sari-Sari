@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Plus, 
   Minus, 
@@ -13,7 +13,8 @@ import {
   Package,
   History,
   ShoppingCart,
-  Loader2
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 import { Product, SaleItem } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
@@ -28,6 +29,42 @@ export const POSView = () => {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'e-wallet'>('cash');
   const [searchTerm, setSearchTerm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [lastTransaction, setLastTransaction] = useState<any>(null);
+  const scannerBuffer = useRef('');
+  const lastKeyTime = useRef(0);
+
+  // Global Barcode Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if focus is in an input field (unless it's the search field)
+      if (
+        document.activeElement?.tagName === 'INPUT' && 
+        !(document.activeElement as HTMLInputElement).placeholder.includes("Scan")
+      ) return;
+
+      const currentTime = Date.now();
+      
+      // Hardware scanners usually send characters very fast (< 50ms)
+      if (currentTime - lastKeyTime.current > 100) {
+        scannerBuffer.current = '';
+      }
+
+      if (e.key === 'Enter') {
+        if (scannerBuffer.current.length > 2) {
+          handleScan(scannerBuffer.current);
+          scannerBuffer.current = '';
+        }
+      } else if (e.key.length === 1) {
+        scannerBuffer.current += e.key;
+      }
+
+      lastKeyTime.current = currentTime;
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [products]);
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -78,12 +115,15 @@ export const POSView = () => {
     if (cart.length === 0) return;
     setIsProcessing(true);
     try {
-      await dbService.add('sales', {
+      const saleData = {
         items: cart,
         total,
         paymentMethod,
-        timestamp: serverTimestamp()
-      });
+        timestamp: serverTimestamp(),
+        orderId: `POS-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+      };
+
+      const docRef = await dbService.add('sales', saleData);
       
       // Update stock levels
       for (const item of cart) {
@@ -95,13 +135,26 @@ export const POSView = () => {
         }
       }
 
-      setCart([]);
-      alert("Transaction successful!");
+      setLastTransaction({ ...saleData, id: docRef?.id });
+      setShowReceipt(true);
+      
+      // Trigger browser print dialog for thermal receipt printers
+      setTimeout(() => {
+        window.print();
+      }, 500);
+
     } catch (error) {
       console.error(error);
+      alert("Checkout failed. Check network connection.");
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const finishTransaction = () => {
+    setCart([]);
+    setShowReceipt(false);
+    setLastTransaction(null);
   };
 
   const categories = ['All', 'Drinks', 'Snacks', 'Canned Goods', 'Biscuits', 'Milk'];
@@ -293,6 +346,99 @@ export const POSView = () => {
         onClose={() => setIsScannerOpen(false)} 
         onScan={handleScan} 
       />
+
+      {/* Printing / Success Overlay */}
+      {showReceipt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md no-print">
+          <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl text-center space-y-6 animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 size={32} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-900 text-center uppercase tracking-tight">Payment Complete</h3>
+              <p className="text-slate-500 text-sm font-medium">Receipt is being printed automatically.</p>
+            </div>
+            
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left space-y-2">
+              <div className="flex justify-between text-xs font-bold text-slate-400 uppercase">
+                <span>Ref No:</span>
+                <span className="text-slate-900">{lastTransaction?.orderId}</span>
+              </div>
+              <div className="flex justify-between text-xs font-bold text-slate-400 uppercase">
+                <span>Method:</span>
+                <span className="text-slate-900">{lastTransaction?.paymentMethod}</span>
+              </div>
+              <div className="flex justify-between text-lg font-black text-slate-900 pt-2 border-t border-slate-200">
+                <span>Total:</span>
+                <span>{formatCurrency(lastTransaction?.total || 0)}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={finishTransaction}
+              className="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+            >
+              Finish & Start New Sale
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Thermal Receipt Print Layout */}
+      <div className="hidden print:block print:w-full print:bg-white text-black font-mono p-4 print-container">
+        <div className="text-center space-y-1 mb-4">
+          <h1 className="text-lg font-bold">SARISARI PRO POS</h1>
+          <p className="text-xs">123 Market Street, City</p>
+          <p className="text-[10px]">TIN: 000-123-456-000</p>
+        </div>
+        
+        <div className="border-t border-b border-black py-2 my-2 space-y-1 text-xs">
+          <div className="flex justify-between">
+            <span>DATE: {new Date().toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>ORDER ID: {lastTransaction?.orderId}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>CASHIER: {document.querySelector('.staff-name')?.textContent || 'Staff'}</span>
+          </div>
+        </div>
+
+        <table className="w-full text-xs text-left mb-4">
+          <thead>
+            <tr className="border-b border-black">
+              <th className="py-1">ITEM</th>
+              <th className="py-1 text-right">QTY</th>
+              <th className="py-1 text-right">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(lastTransaction?.items || []).map((item: any, i: number) => (
+              <tr key={i}>
+                <td className="py-1">{item.name}</td>
+                <td className="py-1 text-right">x{item.quantity}</td>
+                <td className="py-1 text-right">{formatCurrency(item.price * item.quantity)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="border-t border-black pt-2 space-y-1 text-xs font-bold">
+          <div className="flex justify-between text-sm">
+            <span>TOTAL:</span>
+            <span>{formatCurrency(lastTransaction?.total || 0)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>PAYMENT:</span>
+            <span>{lastTransaction?.paymentMethod?.toUpperCase()}</span>
+          </div>
+        </div>
+
+        <div className="text-center mt-6 text-[10px]">
+          <p>THANKS FOR SHOPPING!</p>
+          <p>This is not an official receipt.</p>
+        </div>
+      </div>
     </div>
   );
 };

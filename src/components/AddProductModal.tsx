@@ -15,6 +15,7 @@ interface AddProductModalProps {
 export const AddProductModal = ({ isOpen, onClose, product }: AddProductModalProps) => {
   const { data: suppliers } = useCollection<Supplier>('suppliers');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const barcodeRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -28,6 +29,9 @@ export const AddProductModal = ({ isOpen, onClose, product }: AddProductModalPro
   });
 
   React.useEffect(() => {
+    if (isOpen && !product) {
+      setTimeout(() => barcodeRef.current?.focus(), 100);
+    }
     if (product) {
       setFormData({
         name: product.name,
@@ -184,6 +188,7 @@ export const AddProductModal = ({ isOpen, onClose, product }: AddProductModalPro
                     </label>
                     <input
                       required
+                      ref={barcodeRef}
                       type="text"
                       value={formData.barcode}
                       onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}

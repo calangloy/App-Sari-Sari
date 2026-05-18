@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+@layer base {
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    body {
+      background: white !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    /* Hide everything except the receipt during print */
+    #root > div:not(.print-container) {
+      display: none !important;
+    }
+  }
+}
