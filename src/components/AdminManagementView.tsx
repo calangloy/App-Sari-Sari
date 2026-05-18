@@ -23,7 +23,7 @@ export const AdminManagementView = () => {
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [newUserData, setNewUserData] = useState({
     name: '',
-    email: '',
+    username: '',
     role: 'cashier' as const
   });
 
@@ -37,7 +37,7 @@ export const AdminManagementView = () => {
         createdAt: serverTimestamp()
       });
       setIsAddingUser(false);
-      setNewUserData({ name: '', email: '', role: 'cashier' });
+      setNewUserData({ name: '', username: '', role: 'cashier' });
     } catch (error) {
       console.error(error);
       alert("Failed to add user. Ensure you are the owner.");
@@ -64,7 +64,7 @@ export const AdminManagementView = () => {
 
   const filtered = users.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+    u.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -98,7 +98,7 @@ export const AdminManagementView = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input 
               type="text" 
-              placeholder="Search by name or email..." 
+              placeholder="Search by name or username..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white border border-slate-200 pl-12 pr-4 py-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
@@ -124,7 +124,7 @@ export const AdminManagementView = () => {
                         </div>
                         <div>
                           <p className="font-bold text-slate-900 leading-none">{user.name}</p>
-                          <p className="text-xs text-slate-500 mt-1">{user.email}</p>
+                          <p className="text-xs text-slate-500 mt-1">@{user.username}</p>
                         </div>
                       </div>
                     </td>
@@ -202,10 +202,7 @@ export const AdminManagementView = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="relative w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl"
           >
-            <h2 className="text-xl font-bold mb-1">Add New Team Member</h2>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">
-              Default Password: <span className="text-blue-600">Admin1234</span>
-            </p>
+            <h2 className="text-xl font-bold mb-6">Add New Team Member</h2>
             <form onSubmit={handleAddUser} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
@@ -218,13 +215,14 @@ export const AdminManagementView = () => {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Username</label>
                 <input 
                   required
-                  type="email" 
-                  value={newUserData.email}
-                  onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                  type="text" 
+                  value={newUserData.username}
+                  onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
                   className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="staff01"
                 />
               </div>
               <div className="space-y-1.5">

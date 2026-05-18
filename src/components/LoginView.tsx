@@ -8,7 +8,7 @@ import { cn } from '../lib/utils';
 export const LoginView = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const handleGoogleLogin = async () => {
@@ -27,14 +27,15 @@ export const LoginView = () => {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!username || !password) return;
     setIsLoading(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const loginEmail = username.includes('@') ? username : `${username}@store.internal`;
+      await signInWithEmailAndPassword(auth, loginEmail, password);
     } catch (err: any) {
       console.error(err);
-      setError("Invalid email or password. Please contact your store manager.");
+      setError("Invalid username or password.");
     } finally {
       setIsLoading(false);
     }
@@ -129,15 +130,15 @@ export const LoginView = () => {
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Internal Staff Only</p>
               <form onSubmit={handleEmailLogin} className="space-y-3">
                 <input 
-                  type="email" 
-                  placeholder="Official Email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text" 
+                  placeholder="Username" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
                 />
                 <input 
                   type="password" 
-                  placeholder="Password (Default: Admin1234)" 
+                  placeholder="Password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"

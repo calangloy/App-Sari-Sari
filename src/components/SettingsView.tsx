@@ -56,7 +56,7 @@ export const SettingsView = () => {
   };
   const [newUserData, setNewUserData] = useState({
     name: '',
-    email: '',
+    username: '',
     role: 'cashier' as const
   });
 
@@ -261,7 +261,7 @@ export const SettingsView = () => {
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 text-sm">{u.name}</p>
-                      <p className="text-xs text-slate-500 font-medium">{u.email}</p>
+                      <p className="text-xs text-slate-500 font-medium">@{u.username}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -296,19 +296,16 @@ export const SettingsView = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="relative w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl"
           >
-            <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
               <UserPlus className="text-blue-600" size={24} />
               Create Staff Account
             </h2>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">
-              Default Password: <span className="text-blue-600">Admin1234</span>
-            </p>
             <form onSubmit={async (e) => {
               e.preventDefault();
               try {
                 await dbService.add('users', { ...newUserData, createdAt: serverTimestamp() });
                 setIsAddingUser(false);
-                setNewUserData({ name: '', email: '', role: 'cashier' });
+                setNewUserData({ name: '', username: '', role: 'cashier' });
               } catch (err) {
                 console.error(err);
                 alert("Only Owners can manage accounts.");
@@ -326,14 +323,14 @@ export const SettingsView = () => {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Username</label>
                 <input 
                   required
-                  type="email" 
-                  value={newUserData.email}
-                  onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                  type="text" 
+                  value={newUserData.username}
+                  onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
                   className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="staff@email.com"
+                  placeholder="staff01"
                 />
               </div>
               <div className="space-y-1.5">

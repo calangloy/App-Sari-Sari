@@ -61,7 +61,7 @@ export default function App() {
           // This ensures the first user can actually manage the app
           const defaultUser = {
             name: authUser.displayName || 'Store Owner',
-            email: authUser.email || '',
+            username: authUser.email ? authUser.email.split('@')[0] : 'owner',
             role: 'owner' as const,
           };
           try {

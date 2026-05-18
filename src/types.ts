@@ -45,7 +45,7 @@ export interface Supplier {
 
 export interface SystemUser {
   id: string;
-  email: string;
+  username: string;
   name: string;
   role: 'owner' | 'admin' | 'cashier';
   createdAt?: any;
