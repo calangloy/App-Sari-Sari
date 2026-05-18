@@ -252,25 +252,12 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
             <h1 className="text-xl font-bold tracking-tight text-white uppercase italic">{storeSettings.name}</h1>
             <span className="text-[10px] font-mono text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded">TERMINAL_01</span>
           </div>
-          <div className="flex items-center gap-6">
+        <div className="flex items-center gap-6">
             <div className="text-right border-r border-slate-800 pr-8 hidden sm:block">
               <p className="text-lg font-mono font-bold text-white">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</p>
             </div>
             
-            {/* Dark Mode Toggle for Cashiers */}
-            <button
-              onClick={() => {
-                const isDark = document.documentElement.classList.toggle('dark');
-                localStorage.setItem('theme', isDark ? 'dark' : 'light');
-              }}
-              className="p-3 bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-all border border-slate-700"
-              title="Toggle Dark Mode"
-            >
-              <Moon size={18} className="dark:hidden" />
-              <Sun size={18} className="hidden dark:block" />
-            </button>
-
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-sm font-bold text-white">{user?.name}</p>
@@ -357,95 +344,76 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
           </div>
 
           {/* Checkout / Totals Panel */}
-          <div className="w-[480px] bg-slate-900 flex flex-col p-10 border-l border-slate-800">
-            <div className="flex-1 space-y-10">
-              <div className="space-y-6">
+          <div className="w-[480px] bg-slate-900 flex flex-col border-l border-slate-800 h-full relative">
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar pb-40">
+              <div className="space-y-4">
                 <p className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Current Bill</p>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex justify-between items-baseline">
                     <span className="text-slate-500 font-medium">Items Total</span>
-                    <span className="text-xl font-mono font-bold text-white">{cart.reduce((s, i) => s + i.quantity, 0)} Pcs</span>
+                    <span className="text-lg font-mono font-bold text-white">{cart.reduce((s, i) => s + i.quantity, 0)} Pcs</span>
                   </div>
                   <div className="flex justify-between items-baseline">
                     <span className="text-slate-500 font-medium">Gross Value</span>
-                    <span className="text-xl font-mono font-bold text-white">{formatCurrency(subtotal)}</span>
+                    <span className="text-lg font-mono font-bold text-white">{formatCurrency(subtotal)}</span>
                   </div>
                   <div className="flex justify-between items-baseline">
                     <span className="text-slate-500 font-medium">Estimated VAT</span>
-                    <span className="text-xl font-mono font-bold text-white">{formatCurrency(tax)}</span>
+                    <span className="text-lg font-mono font-bold text-white">{formatCurrency(tax)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-10 border-t border-slate-800">
-                <p className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase mb-4">Total Payable</p>
-                <h2 className="text-[5.5rem] font-mono font-bold tracking-tighter leading-none text-blue-400">
+              <div className="pt-8 border-t border-slate-800">
+                <p className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase mb-2">Total Payable</p>
+                <h2 className="text-[4.5rem] font-mono font-bold tracking-tighter leading-none text-blue-400">
                   {formatCurrency(total)}
                 </h2>
               </div>
 
-              <div className="space-y-6 pt-6 border-t border-slate-800">
-                <p className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Customer Information (Optional)</p>
-                <div className="space-y-3">
-                  <input 
-                    type="text"
-                    placeholder="NAME..."
-                    className="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl text-blue-400 font-bold focus:border-blue-500 outline-none uppercase placeholder:text-slate-800 text-sm"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                  />
-                  <input 
-                    type="text"
-                    placeholder="PHONE..."
-                    className="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl text-blue-400 font-bold focus:border-blue-500 outline-none uppercase placeholder:text-slate-800 text-sm"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-6 pt-6 ">
+              <div className="space-y-4 pt-6 border-t border-slate-800">
                 <p className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Payment Method</p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 pb-8">
                   <button 
                     onClick={() => setPaymentMethod('cash')}
                     className={cn(
-                      "flex flex-col items-center gap-3 p-8 rounded-3xl border-2 transition-all group",
+                      "flex flex-col items-center gap-2 p-6 rounded-3xl border-2 transition-all group",
                       paymentMethod === 'cash' ? "bg-white text-slate-950 border-white" : "bg-slate-950 text-slate-500 border-slate-800 shadow-none"
                     )}
                   >
-                    <Banknote size={28} className={paymentMethod === 'cash' ? "text-slate-950" : "text-slate-800"} />
+                    <Banknote size={24} className={paymentMethod === 'cash' ? "text-slate-950" : "text-slate-800"} />
                     <span className="font-bold text-[10px] uppercase tracking-widest">Cash</span>
                   </button>
                   <button 
                      onClick={() => setPaymentMethod('e-wallet')}
                      className={cn(
-                        "flex flex-col items-center gap-3 p-8 rounded-3xl border-2 transition-all group",
+                        "flex flex-col items-center gap-2 p-6 rounded-3xl border-2 transition-all group text-center",
                         paymentMethod === 'e-wallet' ? "bg-blue-600 text-white border-blue-600" : "bg-slate-950 text-slate-500 border-slate-800 shadow-none"
                       )}
                   >
-                    <Wallet size={28} className={paymentMethod === 'e-wallet' ? "text-white" : "text-slate-800"} />
+                    <Wallet size={24} className={paymentMethod === 'e-wallet' ? "text-white" : "text-slate-800"} />
                     <span className="font-bold text-[10px] uppercase tracking-widest">GCash</span>
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="pt-10 space-y-6">
+            {/* Sticky Action Panel to ensure visibility */}
+            <div className="absolute bottom-0 left-0 right-0 p-8 border-t border-slate-800 bg-slate-900 shadow-[0_-20px_40px_rgba(15,23,42,0.6)] space-y-4">
               <button
                 onClick={handleCheckout}
                 disabled={cart.length === 0 || isProcessing}
-                className="w-full bg-blue-600 text-white py-10 rounded-[2.5rem] font-bold text-3xl uppercase tracking-widest shadow-2xl shadow-blue-600/20 hover:bg-blue-500 active:scale-95 transition-all flex items-center justify-center gap-6"
+                className="w-full bg-blue-600 text-white py-8 rounded-[2rem] font-bold text-2xl uppercase tracking-widest shadow-2xl shadow-blue-600/20 hover:bg-blue-500 active:scale-95 transition-all flex items-center justify-center gap-4"
               >
-                {isProcessing ? <Loader2 className="animate-spin" size={32} /> : <Receipt size={32} />}
-                PROCESS SALE
+                {isProcessing ? <Loader2 className="animate-spin" size={28} /> : <Receipt size={28} />}
+                COMPLETE SALE
               </button>
               <button 
                 onClick={handleCancelTransaction}
-                className="w-full py-4 text-slate-700 font-bold uppercase text-[10px] tracking-[0.3em] hover:text-red-500 transition-colors"
+                className="w-full py-2 text-slate-700 font-bold uppercase text-[10px] tracking-[0.3em] hover:text-red-500 transition-colors"
                 disabled={cart.length === 0}
               >
-                Cancel with Manager PIN
+                Void Transaction
               </button>
             </div>
           </div>

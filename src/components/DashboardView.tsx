@@ -103,22 +103,22 @@ export const DashboardView = ({ user }: { user: SystemUser | null }) => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
-          <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-md hover:border-blue-100 dark:hover:border-blue-900 group">
+          <div key={i} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition-all hover:shadow-md hover:border-blue-100 group">
             <div className="flex items-start justify-between">
-              <div className={cn("p-3 rounded-xl transition-colors group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500", stat.color, "dark:bg-slate-800 dark:text-slate-400")}>
+              <div className={cn("p-3 rounded-xl transition-colors group-hover:bg-blue-600 group-hover:text-white", stat.color)}>
                 <stat.icon size={22} />
               </div>
               <div className={cn(
                 "flex items-center text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider",
-                stat.isUp ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                stat.isUp ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
               )}>
                 {stat.isUp ? <ArrowUpRight size={12} className="mr-0.5" /> : <ArrowDownRight size={12} className="mr-0.5" />}
                 {stat.delta}
               </div>
             </div>
             <div className="mt-4">
-              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{stat.label}</p>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-display tracking-tight">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
+              <h3 className="text-2xl font-black text-slate-900 mt-1 font-display tracking-tight">
                 {typeof stat.value === 'number' && stat.label.includes('Sales') 
                   ? formatCurrency(stat.value) 
                   : stat.value}
@@ -130,40 +130,40 @@ export const DashboardView = ({ user }: { user: SystemUser | null }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Transactions */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-          <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
-            <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 font-display">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-colors">
+          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h3 className="font-bold text-slate-900 flex items-center gap-2 font-display">
               <Clock size={18} className="text-blue-500" />
               Recent Transactions
             </h3>
-            <button className="text-[10px] font-black text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 uppercase tracking-widest transition-colors">View History</button>
+            <button className="text-[10px] font-black text-slate-400 hover:text-blue-600 uppercase tracking-widest transition-colors">View History</button>
           </div>
-          <div className="divide-y divide-slate-50 dark:divide-slate-800">
+          <div className="divide-y divide-slate-50">
             {recentTransactions.map((tx) => (
-              <div key={tx.id} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+              <div key={tx.id} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-slate-400 dark:text-slate-500 text-xs shadow-inner">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-400 text-xs shadow-inner">
                     {tx.customer[0]}
                   </div>
                   <div>
-                    <div className="font-bold text-slate-900 dark:text-white text-sm uppercase italic">{tx.customer}</div>
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tight font-mono">
+                    <div className="font-bold text-slate-900 text-sm uppercase italic">{tx.customer}</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight font-mono">
                       {tx.time} • {tx.items} items {isAdmin && `• ${tx.method}`}
                     </div>
                   </div>
                 </div>
-                {isAdmin && <div className="font-bold text-slate-900 dark:text-white font-mono">{formatCurrency(tx.total)}</div>}
+                {isAdmin && <div className="font-bold text-slate-900 font-mono">{formatCurrency(tx.total)}</div>}
               </div>
             ))}
           </div>
         </div>
 
         {/* Top Products */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 overflow-hidden relative transition-colors">
-          <div className="absolute top-0 right-0 p-8 opacity-[0.03] dark:opacity-[0.07] text-blue-600 dark:text-blue-400 rotate-12">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-hidden relative transition-colors">
+          <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-blue-600 rotate-12">
             <TrendingUp size={120} />
           </div>
-          <h3 className="font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2 font-display">
+          <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2 font-display">
             <Package size={18} className="text-blue-500" />
             Top Selling Items
           </h3>
@@ -172,12 +172,12 @@ export const DashboardView = ({ user }: { user: SystemUser | null }) => {
               <div key={i} className="space-y-2 group">
                 <div className="flex justify-between items-end">
                   <div>
-                    <p className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-tight">{product.name}</p>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{product.sold} units sold</p>
+                    <p className="font-bold text-slate-900 text-sm uppercase tracking-tight">{product.name}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{product.sold} units sold</p>
                   </div>
-                  {isAdmin && <p className="font-bold text-slate-900 dark:text-white text-sm font-mono">{formatCurrency(product.revenue)}</p>}
+                  {isAdmin && <p className="font-bold text-slate-900 text-sm font-mono">{formatCurrency(product.revenue)}</p>}
                 </div>
-                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
                   <div 
                     className={cn("h-full rounded-full transition-all duration-1000 ease-out shadow-sm", product.color)}
                     style={{ width: `${product.progress}%` }}
@@ -185,7 +185,7 @@ export const DashboardView = ({ user }: { user: SystemUser | null }) => {
                 </div>
               </div>
             )) : (
-              <div className="flex flex-col items-center justify-center py-8 text-slate-300 dark:text-slate-700 opacity-50">
+              <div className="flex flex-col items-center justify-center py-8 text-slate-300 opacity-50">
                 <TrendingUp size={48} strokeWidth={1} />
                 <p className="text-[10px] font-black uppercase mt-4 tracking-widest">No sales data yet</p>
               </div>

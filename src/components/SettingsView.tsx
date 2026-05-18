@@ -166,9 +166,9 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
 
   return (
     <div className="max-w-4xl space-y-8 animate-in fade-in duration-500">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-          <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 font-display uppercase tracking-tight">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-colors">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="font-bold text-slate-900 flex items-center gap-2 font-display uppercase tracking-tight">
             <ShieldCheck size={18} className="text-blue-500" />
             Store Identity & Receipt
           </h2>
@@ -177,62 +177,62 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
           <form onSubmit={saveStoreSettings} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Store Name</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Name</label>
                 <input 
                   name="name"
                   defaultValue={storeSettings.name}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-900 dark:text-white transition-colors shadow-inner"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-900 transition-colors shadow-inner"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Contact Number</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact Number</label>
                 <input 
                   name="phone"
                   defaultValue={storeSettings.phone}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white transition-colors shadow-inner"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 transition-colors shadow-inner"
                 />
               </div>
               <div className="md:col-span-2 space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Store Address</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Address</label>
                 <input 
                   name="address"
                   defaultValue={storeSettings.address}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white transition-colors shadow-inner"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 transition-colors shadow-inner"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Logo URL (Optional)</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo URL (Optional)</label>
                 <input 
                   name="logoUrl"
                   defaultValue={storeSettings.logoUrl}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white transition-colors shadow-inner"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 transition-colors shadow-inner"
                   placeholder="https://..."
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">VAT/Tax Rate (%)</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">VAT/Tax Rate (%)</label>
                 <input 
                   type="number"
                   step="0.01"
                   name="taxRate"
                   defaultValue={storeSettings.taxRate}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-900 dark:text-white transition-colors shadow-inner"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-900 transition-colors shadow-inner"
                 />
               </div>
               <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Receipt Footnote / Thank You Message</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Receipt Footnote / Thank You Message</label>
                 <input 
                   name="receiptFootnote"
                   defaultValue={storeSettings.receiptFootnote || 'THANK YOU FOR YOUR BUSINESS!'}
                   placeholder="e.g. Please come back again!"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-900 dark:text-white transition-colors shadow-inner"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-900 transition-colors shadow-inner"
                 />
               </div>
             </div>
             <div className="flex justify-end pt-4">
               <button 
                 type="submit"
-                className="bg-blue-600 dark:bg-blue-500 text-white px-10 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 dark:hover:bg-blue-600 transition-all shadow-lg shadow-blue-200 dark:shadow-none flex items-center gap-2 active:scale-95"
+                className="bg-blue-600 text-white px-10 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center gap-2 active:scale-95"
               >
                 <Save size={18} />
                 Update Profile
@@ -242,9 +242,9 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-          <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 font-display uppercase tracking-tight">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-colors">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="font-bold text-slate-900 flex items-center gap-2 font-display uppercase tracking-tight">
             <Database size={18} className="text-blue-500" />
             Database & System
           </h2>
@@ -252,40 +252,40 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
         <div className="p-8 space-y-8">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <h3 className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">Seed Initial Data</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Populate your inventory and suppliers with sample data for testing.</p>
+              <h3 className="font-bold text-slate-900 uppercase tracking-tight">Seed Initial Data</h3>
+              <p className="text-sm text-slate-500">Populate your inventory and suppliers with sample data for testing.</p>
             </div>
             <button 
               onClick={seedDatabase}
               disabled={isSeeding}
-              className="flex items-center gap-2 bg-blue-600 dark:bg-blue-500 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all font-bold text-xs uppercase tracking-wider disabled:opacity-50"
+              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 transition-all font-bold text-xs uppercase tracking-wider disabled:opacity-50"
             >
               {isSeeding ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
               {isSeeding ? 'Seeding...' : 'Seed Data'}
             </button>
           </div>
 
-          <div className="pt-8 border-t border-slate-100 dark:border-slate-800 flex items-start justify-between">
+          <div className="pt-8 border-t border-slate-100 flex items-start justify-between">
             <div className="space-y-1">
-              <h3 className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">System Backup</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Download a complete copy of your store's database for manual records.</p>
+              <h3 className="font-bold text-slate-900 uppercase tracking-tight">System Backup</h3>
+              <p className="text-sm text-slate-500">Download a complete copy of your store's database for manual records.</p>
             </div>
             <button 
               onClick={exportDatabase}
               disabled={isExporting}
-              className="flex items-center gap-2 bg-slate-900 dark:bg-slate-800 text-white px-6 py-2.5 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-700 transition-all font-bold text-xs uppercase tracking-wider disabled:opacity-50"
+              className="flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-slate-800 transition-all font-bold text-xs uppercase tracking-wider disabled:opacity-50"
             >
               {isExporting ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
               {isExporting ? 'Preparing...' : 'Export All Data'}
             </button>
           </div>
 
-          <div className="pt-8 border-t border-slate-100 dark:border-slate-800 flex items-start justify-between">
+          <div className="pt-8 border-t border-slate-100 flex items-start justify-between">
             <div className="space-y-1">
-              <h3 className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">Cloud Persistence</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">All data is encrypted and synced to Google Cloud servers in real-time.</p>
+              <h3 className="font-bold text-slate-900 uppercase tracking-tight">Cloud Persistence</h3>
+              <p className="text-sm text-slate-500">All data is encrypted and synced to Google Cloud servers in real-time.</p>
             </div>
-            <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-xs font-black uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-green-600 text-xs font-black uppercase tracking-widest">
               <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
               Connected
             </div>
