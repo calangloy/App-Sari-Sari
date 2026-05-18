@@ -12,7 +12,7 @@ const auth = getAuth(app);
 
 // Helper to create users without signing out the current admin
 export const createInternalAuthUser = async (username: string, password: string) => {
-  const email = `${username.toLowerCase().trim()}@store.internal`;
+  const email = `${username.toLowerCase().trim()}@sarisari.pos`;
   const secondaryAppName = `Secondary-${Date.now()}`;
   const secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
   const secondaryAuth = getAuth(secondaryApp);
