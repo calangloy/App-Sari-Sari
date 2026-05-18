@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
   Users, 
@@ -18,6 +19,12 @@ export const DashboardView = () => {
   const { data: sales, loading: salesLoading } = useCollection<Sale>('sales', orderBy('timestamp', 'desc'));
   const { data: products, loading: productsLoading } = useCollection<Product>('products');
   const { data: customers, loading: customersLoading } = useCollection<any>('customers');
+  const [dailyTarget, setDailyTarget] = useState(5000); // Default target
+
+  useEffect(() => {
+    const savedTarget = localStorage.getItem('dailyTarget');
+    if (savedTarget) setDailyTarget(Number(savedTarget));
+  }, []);
 
   if (salesLoading || productsLoading || customersLoading) {
     return (
@@ -37,11 +44,19 @@ export const DashboardView = () => {
   });
 
   const totalRevenueToday = todaysSales.reduce((sum, s) => sum + s.total, 0);
+  const targetProgress = Math.min(100, (totalRevenueToday / dailyTarget) * 100);
   const lowStockCount = products.filter(p => p.stockLevel <= 5).length;
 
   const stats = [
-    { label: 'Total Sales (Today)', value: totalRevenueToday, delta: '+12.5%', isUp: true, icon: DollarSign, color: 'bg-blue-50 text-blue-600' },
-    { label: 'Total Transactions', value: todaysSales.length, delta: '+3', isUp: true, icon: TrendingUp, color: 'bg-slate-50 text-slate-600' },
+    { 
+      label: 'Total Sales (Today)', 
+      value: totalRevenueToday, 
+      delta: `${targetProgress.toFixed(1)}% of Target`, 
+      isUp: targetProgress >= 100, 
+      icon: DollarSign, 
+      color: 'bg-blue-50 text-blue-600' 
+    },
+    { label: 'Total Transactions', value: todaysSales.length, delta: '+Today', isUp: true, icon: TrendingUp, color: 'bg-slate-50 text-slate-600' },
     { label: 'Active Customers', value: customers.length, delta: '+2', isUp: true, icon: Users, color: 'bg-indigo-50 text-indigo-600' },
     { label: 'Low Stock Items', value: lowStockCount, delta: '-1', isUp: lowStockCount > 5, icon: Package, color: 'bg-red-50 text-red-600' },
   ];
@@ -57,6 +72,29 @@ export const DashboardView = () => {
       method: s.paymentMethod
     };
   });
+
+  // Calculate top selling items
+  const productSalesMap: Record<string, { name: string; sold: number; revenue: number }> = {};
+  sales.forEach(sale => {
+    sale.items.forEach(item => {
+      if (!productSalesMap[item.productId]) {
+        productSalesMap[item.productId] = { name: item.name, sold: 0, revenue: 0 };
+      }
+      productSalesMap[item.productId].sold += item.quantity;
+      productSalesMap[item.productId].revenue += item.quantity * item.price;
+    });
+  });
+
+  const sortedTopItems = Object.values(productSalesMap)
+    .sort((a, b) => b.sold - a.sold)
+    .slice(0, 3);
+
+  const maxSold = sortedTopItems[0]?.sold || 1;
+  const topProducts = sortedTopItems.map((item, i) => ({
+    ...item,
+    progress: (item.sold / maxSold) * 100,
+    color: i === 0 ? 'bg-blue-600' : i === 1 ? 'bg-blue-500' : 'bg-blue-400'
+  }));
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -128,11 +166,7 @@ export const DashboardView = () => {
             Top Selling Items
           </h3>
           <div className="space-y-6 relative z-10">
-            {[
-              { name: 'Coke Original 1.5L', sold: 14, revenue: 1050, progress: 85, color: 'bg-blue-600' },
-              { name: 'Piattos Cheese', sold: 42, revenue: 630, progress: 65, color: 'bg-blue-500' },
-              { name: 'Bear Brand 33g', sold: 28, revenue: 448, progress: 45, color: 'bg-blue-400' },
-            ].map((product, i) => (
+            {topProducts.length > 0 ? topProducts.map((product, i) => (
               <div key={i} className="space-y-2">
                 <div className="flex justify-between items-end">
                   <div>
@@ -148,7 +182,12 @@ export const DashboardView = () => {
                   />
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="flex flex-col items-center justify-center py-8 text-slate-300 opacity-50">
+                <TrendingUp size={48} strokeWidth={1} />
+                <p className="text-[10px] font-black uppercase mt-4 tracking-widest">No sales data yet</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

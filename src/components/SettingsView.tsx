@@ -23,7 +23,36 @@ import { motion } from 'motion/react';
 export const SettingsView = () => {
   const { data: users, loading: usersLoading } = useCollection<SystemUser>('users', orderBy('name'));
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isAddingUser, setIsAddingUser] = useState(false);
+  const [dailyTarget, setDailyTarget] = useState(() => Number(localStorage.getItem('dailyTarget')) || 5000);
+
+  const saveTarget = () => {
+    localStorage.setItem('dailyTarget', dailyTarget.toString());
+    alert("Daily target saved!");
+  };
+
+  const deleteDatabase = async () => {
+    if (!confirm("CRITICAL WARNING: Are you sure you want to PERMANENTLY DELETE ALL products, sales, and customer data? This cannot be undone.")) return;
+    
+    setIsDeleting(true);
+    try {
+      const collections = ['products', 'sales', 'customers', 'suppliers', 'purchases'];
+      for (const coll of collections) {
+         const snap = await dbService.list(coll);
+         for (const doc of snap) {
+           await dbService.remove(coll, doc.id);
+         }
+      }
+      alert("Database wiped successfully.");
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete database.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   const [newUserData, setNewUserData] = useState({
     name: '',
     email: '',
@@ -97,6 +126,59 @@ export const SettingsView = () => {
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               Active
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="font-bold text-slate-900 flex items-center gap-1.5">
+            <TrendingUp size={18} className="text-blue-500" />
+            Performance & Targets
+          </h2>
+        </div>
+        <div className="p-8">
+          <div className="flex items-end gap-6 max-w-lg">
+            <div className="flex-1 space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daily Sales Target (PHP)</label>
+              <input 
+                type="number" 
+                value={dailyTarget}
+                onChange={(e) => setDailyTarget(Number(e.target.value))}
+                className="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl text-lg font-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              />
+            </div>
+            <button 
+              onClick={saveTarget}
+              className="bg-slate-900 text-white px-8 py-4 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
+            >
+              Save Target
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-red-50 rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-red-200 bg-red-100/50">
+          <h2 className="font-bold text-red-900 flex items-center gap-1.5">
+            <Trash2 size={18} />
+            Danger Zone
+          </h2>
+        </div>
+        <div className="p-8">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="font-bold text-red-900">Reset Store Database</h3>
+              <p className="text-sm text-red-600/70 font-medium">Permanently delete all inventory, sales, and accounts.</p>
+            </div>
+            <button 
+              disabled={isDeleting}
+              onClick={deleteDatabase}
+              className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-red-200"
+            >
+              {isDeleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+              {isDeleting ? "Wiping..." : "Delete All Data"}
+            </button>
           </div>
         </div>
       </div>

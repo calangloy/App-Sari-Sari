@@ -164,8 +164,12 @@ export const POSView = () => {
                 onClick={() => addToCart(product)}
                 className="flex flex-col text-left p-3 rounded-xl border border-slate-100 hover:border-blue-300 shadow-sm cursor-pointer transition-all group bg-white"
               >
-                <div className="w-full aspect-square bg-slate-50 rounded-lg mb-3 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 transition-colors">
-                  <Package size={28} />
+                <div className="w-full aspect-square bg-slate-50 rounded-lg mb-3 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 transition-colors overflow-hidden">
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  ) : (
+                    <Package size={28} />
+                  )}
                 </div>
                 <div className="font-bold text-sm text-slate-900 line-clamp-1">{product.name}</div>
                 <div className="flex justify-between items-center mt-1">
@@ -174,7 +178,7 @@ export const POSView = () => {
                     "text-[10px] px-2 py-0.5 rounded-full font-bold",
                     product.stockLevel <= 5 ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
                   )}>
-                    {product.stockLevel} In Stock
+                    {product.stockLevel}x
                   </span>
                 </div>
               </button>

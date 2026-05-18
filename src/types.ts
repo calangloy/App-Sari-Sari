@@ -8,6 +8,7 @@ export interface Product {
   category: string;
   supplierId?: string;
   updatedAt: string;
+  imageUrl?: string;
 }
 
 export interface SaleItem {

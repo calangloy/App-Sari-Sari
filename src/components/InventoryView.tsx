@@ -53,6 +53,7 @@ export const InventoryView = () => {
           <table className="w-full text-left">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Image</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Product Details</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Barcode</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</th>
@@ -64,6 +65,15 @@ export const InventoryView = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredProducts.map((product) => (
                 <tr key={product.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="text-slate-300" size={18} />
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="font-bold text-slate-900">{product.name}</div>
                   </td>

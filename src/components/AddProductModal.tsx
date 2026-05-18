@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Loader2, Barcode, Tag, DollarSign, Package, Layers, Truck } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Loader2, Barcode, Tag, DollarSign, Package, Layers, Truck, Upload, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { dbService } from '../lib/db';
 import { serverTimestamp } from 'firebase/firestore';
@@ -13,6 +13,7 @@ interface AddProductModalProps {
 
 export const AddProductModal = ({ isOpen, onClose }: AddProductModalProps) => {
   const { data: suppliers } = useCollection<Supplier>('suppliers');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -21,8 +22,24 @@ export const AddProductModal = ({ isOpen, onClose }: AddProductModalProps) => {
     sellingPrice: '',
     stockLevel: '',
     category: '',
-    supplierId: ''
+    supplierId: '',
+    imageUrl: ''
   });
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // 1MB limit for base64 in firestore
+        alert("Image too large. Please select an image under 1MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, imageUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +60,8 @@ export const AddProductModal = ({ isOpen, onClose }: AddProductModalProps) => {
         sellingPrice: '',
         stockLevel: '',
         category: '',
-        supplierId: ''
+        supplierId: '',
+        imageUrl: ''
       });
     } catch (error) {
       console.error(error);
@@ -91,6 +109,37 @@ export const AddProductModal = ({ isOpen, onClose }: AddProductModalProps) => {
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <ImageIcon size={12} /> Product Image
+                    </label>
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full h-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50/30 transition-all overflow-hidden relative group"
+                    >
+                      {formData.imageUrl ? (
+                        <>
+                          <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <Upload className="text-white" size={24} />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="text-slate-300" size={24} />
+                          <span className="text-[10px] font-bold text-slate-400 mt-2">Click to upload photo</span>
+                        </>
+                      )}
+                    </div>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                  </div>
+
                   <div className="space-y-1.5">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                       <Tag size={12} /> Product Name

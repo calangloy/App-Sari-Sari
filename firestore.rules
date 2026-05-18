@@ -55,7 +55,7 @@ service cloud.firestore {
 
       function isValidProduct(p) {
         return p.keys().hasAll(['name', 'barcode', 'costPrice', 'sellingPrice', 'stockLevel', 'category', 'supplierId', 'updatedAt'])
-               && p.keys().size() == 8
+               && (p.keys().size() == 8 || (p.keys().size() == 9 && p.keys().hasAll(['imageUrl'])))
                && p.name is string && p.name.size() > 0 && p.name.size() <= 200
                && p.barcode is string && p.barcode.size() <= 64
                && p.costPrice is number && p.costPrice >= 0
@@ -63,7 +63,8 @@ service cloud.firestore {
                && p.stockLevel is number
                && p.category is string && p.category.size() <= 100
                && p.supplierId is string && p.supplierId.size() <= 128
-               && p.updatedAt == request.time;
+               && p.updatedAt == request.time
+               && (p.imageUrl == null || (p.imageUrl is string && p.imageUrl.size() <= 1048576)); // Allow image data up to 1MB (base64)
       }
     }
 
