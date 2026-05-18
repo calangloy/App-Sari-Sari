@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Plus, Search, Mail, Phone, MapPin, MoreVertical, Loader2 } from 'lucide-react';
 import { Customer } from '../types';
 import { formatCurrency } from '../lib/utils';
 import { useCollection } from '../lib/db';
 import { orderBy } from 'firebase/firestore';
+import { AddCustomerModal } from './AddCustomerModal';
 
 export const CustomersView = () => {
   const { data: customers, loading } = useCollection<Customer>('customers', orderBy('name'));
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filtered = customers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -35,11 +37,16 @@ export const CustomersView = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider"
+        >
           <Plus size={18} />
           <span>Add New Customer</span>
         </button>
       </div>
+
+      <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((customer) => (

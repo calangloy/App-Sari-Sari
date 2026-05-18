@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Plus, Search, Mail, Phone, User, Landmark, Loader2 } from 'lucide-react';
 import { Supplier } from '../types';
 import { useCollection } from '../lib/db';
 import { orderBy } from 'firebase/firestore';
+import { AddSupplierModal } from './AddSupplierModal';
 
 export const SuppliersView = () => {
   const { data: suppliers, loading } = useCollection<Supplier>('suppliers', orderBy('name'));
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filtered = suppliers.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -34,11 +36,16 @@ export const SuppliersView = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider"
+        >
           <Plus size={18} />
           <span>Add New Supplier</span>
         </button>
       </div>
+
+      <AddSupplierModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((supplier) => (

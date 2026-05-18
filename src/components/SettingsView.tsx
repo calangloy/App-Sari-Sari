@@ -1,10 +1,34 @@
-import { useState } from 'react';
-import { Database, Shield, Bell, Smartphone, User, Save, Loader2, RefreshCw } from 'lucide-react';
-import { dbService } from '../lib/db';
-import { serverTimestamp } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { 
+  Database, 
+  Shield, 
+  Bell, 
+  Smartphone, 
+  User, 
+  Save, 
+  Loader2, 
+  RefreshCw, 
+  UserPlus, 
+  Mail, 
+  ShieldCheck,
+  Search,
+  Trash2
+} from 'lucide-react';
+import { dbService, useCollection } from '../lib/db';
+import { serverTimestamp, orderBy } from 'firebase/firestore';
+import { SystemUser } from '../types';
+import { cn } from '../lib/utils';
+import { motion } from 'motion/react';
 
 export const SettingsView = () => {
+  const { data: users, loading: usersLoading } = useCollection<SystemUser>('users', orderBy('name'));
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    name: '',
+    email: '',
+    role: 'cashier' as const
+  });
 
   const seedDatabase = async () => {
     setIsSeeding(true);
@@ -110,6 +134,135 @@ export const SettingsView = () => {
           </button>
         </div>
       </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <h2 className="font-bold text-slate-900 flex items-center gap-2">
+            <UserPlus size={18} className="text-blue-500" />
+            Staff & Admin Accounts
+          </h2>
+          <button 
+            onClick={() => setIsAddingUser(true)}
+            className="text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all"
+          >
+            Add New User
+          </button>
+        </div>
+        <div className="p-8">
+          {usersLoading ? (
+            <div className="flex justify-center p-4">
+              <Loader2 className="animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {users.map((u) => (
+                <div key={u.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 group hover:border-blue-200 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-400 group-hover:text-blue-500 transition-colors">
+                      {u.name[0]}
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm">{u.name}</p>
+                      <p className="text-xs text-slate-500 font-medium">{u.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className={cn(
+                      "text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full",
+                      u.role === 'owner' ? "bg-amber-100 text-amber-600" :
+                      u.role === 'admin' ? "bg-blue-100 text-blue-600" :
+                      "bg-slate-200 text-slate-500"
+                    )}>
+                      {u.role}
+                    </span>
+                    <button className="text-slate-300 hover:text-red-500 transition-colors">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add User Modal Integration */}
+      {isAddingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsAddingUser(false)} />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl"
+          >
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <UserPlus className="text-blue-600" size={24} />
+              Create Staff Account
+            </h2>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                await dbService.add('users', { ...newUserData, createdAt: serverTimestamp() });
+                setIsAddingUser(false);
+                setNewUserData({ name: '', email: '', role: 'cashier' });
+              } catch (err) {
+                console.error(err);
+                alert("Only Owners can manage accounts.");
+              }
+            }} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
+                <input 
+                  required
+                  type="text" 
+                  value={newUserData.name}
+                  onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. Maria Clara"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address</label>
+                <input 
+                  required
+                  type="email" 
+                  value={newUserData.email}
+                  onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="staff@email.com"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Assigned Role</label>
+                <select 
+                  value={newUserData.role}
+                  onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value as any })}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                >
+                  <option value="cashier">Cashier (Standard Access)</option>
+                  <option value="admin">Admin (Managerial Access)</option>
+                  <option value="owner">Owner (Full Access)</option>
+                </select>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsAddingUser(false)}
+                  className="flex-1 py-3 font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-shadow shadow-lg shadow-blue-200"
+                >
+                  Create User
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
