@@ -47,32 +47,6 @@ export const SalesView = () => {
   const totalOrders = filteredSales.length;
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  const exportToCSV = () => {
-    if (filteredSales.length === 0) return;
-    
-    const headers = ["Order ID", "Date", "Payment Method", "Items", "Subtotal", "Tax", "Total"];
-    const rows = filteredSales.map(sale => [
-      sale.orderId || sale.id,
-      sale.timestamp ? format((sale.timestamp as Timestamp).toDate(), 'yyyy-MM-dd HH:mm') : 'N/A',
-      sale.paymentMethod,
-      `"${sale.items.map(i => `${i.name} (x${i.quantity})`).join('|')}"`,
-      sale.subtotal || 0,
-      sale.tax || 0,
-      sale.total || 0
-    ]);
-
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `sales_report_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
@@ -81,10 +55,7 @@ export const SalesView = () => {
           <p className="text-slate-500 font-medium">Track your store's financial performance</p>
         </div>
         <div className="flex gap-2">
-          <button 
-            onClick={exportToCSV}
-            className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-600 hover:bg-slate-50 transition-all"
-          >
+          <button className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-600 hover:bg-slate-50 transition-all">
             <Download size={16} />
             Export CSV
           </button>
