@@ -18,8 +18,12 @@ import { format } from 'date-fns';
 export const DashboardView = ({ user }: { user: SystemUser | null }) => {
   const { data: sales, loading: salesLoading } = useCollection<Sale>('sales', orderBy('timestamp', 'desc'));
   const { data: products, loading: productsLoading } = useCollection<Product>('products');
-  const { data: customers, loading: customersLoading } = useCollection<any>('customers');
+  const { data: suppliers, loading: suppliersLoading } = useCollection<any>('suppliers');
+  const { data: settings } = useCollection<any>('settings');
   const [dailyTarget, setDailyTarget] = useState(5000); // Default target
+
+  const storeSettings = settings.find(s => s.id === 'store') || { lowStockThreshold: 5 };
+  const lowStockThreshold = storeSettings.lowStockThreshold || 5;
 
   const isAdmin = user?.role === 'owner' || user?.role === 'admin';
 
@@ -28,7 +32,7 @@ export const DashboardView = ({ user }: { user: SystemUser | null }) => {
     if (savedTarget) setDailyTarget(Number(savedTarget));
   }, []);
 
-  if (salesLoading || productsLoading || customersLoading) {
+  if (salesLoading || productsLoading || suppliersLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="animate-spin text-blue-500" size={32} />
@@ -47,7 +51,7 @@ export const DashboardView = ({ user }: { user: SystemUser | null }) => {
 
   const totalRevenueToday = todaysSales.reduce((sum, s) => sum + s.total, 0);
   const targetProgress = Math.min(100, (totalRevenueToday / dailyTarget) * 100);
-  const lowStockCount = products.filter(p => p.stockLevel <= 5).length;
+  const lowStockCount = products.filter(p => p.stockLevel <= lowStockThreshold).length;
 
   const stats = [
     { 
@@ -59,8 +63,8 @@ export const DashboardView = ({ user }: { user: SystemUser | null }) => {
       color: 'bg-blue-50 text-blue-600' 
     },
     { label: 'Total Transactions', value: todaysSales.length, delta: '+Today', isUp: true, icon: TrendingUp, color: 'bg-slate-50 text-slate-600' },
-    { label: 'Active Customers', value: customers.length, delta: '+2', isUp: true, icon: Users, color: 'bg-indigo-50 text-indigo-600' },
-    { label: 'Low Stock Items', value: lowStockCount, delta: '-1', isUp: lowStockCount > 5, icon: Package, color: 'bg-red-50 text-red-600' },
+    { label: 'Active Suppliers', value: suppliers.length, delta: 'Managed', isUp: true, icon: Users, color: 'bg-indigo-50 text-indigo-600' },
+    { label: 'Low Stock Items', value: lowStockCount, delta: 'Alerts', isUp: lowStockCount > 0, icon: Package, color: 'bg-red-50 text-red-600' },
   ];
 
   const recentTransactions = sales.slice(0, 5).map(s => {

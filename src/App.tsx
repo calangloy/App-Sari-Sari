@@ -32,14 +32,14 @@ import { LoginView } from './components/LoginView';
 import { DashboardView } from './components/DashboardView';
 import { POSView } from './components/POSView';
 import { InventoryView } from './components/InventoryView';
-import { CustomersView } from './components/CustomersView';
+import { AuditLogView } from './components/AuditLogView';
 import { SuppliersView } from './components/SuppliersView';
 import { SettingsView } from './components/SettingsView';
 import { AdminManagementView } from './components/AdminManagementView';
 import { SalesView } from './components/SalesView';
 import { SystemUser } from './types';
 
-type View = 'dashboard' | 'pos' | 'inventory' | 'sales' | 'customers' | 'suppliers' | 'settings' | 'admin';
+type View = 'dashboard' | 'pos' | 'inventory' | 'sales' | 'activity' | 'suppliers' | 'settings' | 'admin';
 
 export default function App() {
   const [activeView, setActiveView] = useState<View>('dashboard');
@@ -125,7 +125,7 @@ export default function App() {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'pos', label: 'Point of Sale', icon: ShoppingCart },
     { id: 'inventory', label: 'Inventory', icon: Package },
-    { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'activity', label: 'Activity Log', icon: History },
   ];
 
   if (systemUser?.role === 'owner' || systemUser?.role === 'admin') {
@@ -287,7 +287,7 @@ export default function App() {
               {activeView === 'pos' && <POSView user={systemUser} onLogout={handleLogout} />}
               {activeView === 'inventory' && <InventoryView user={systemUser} />}
               {activeView === 'sales' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <SalesView />}
-              {activeView === 'customers' && <CustomersView user={systemUser} />}
+              {activeView === 'activity' && <AuditLogView />}
               {activeView === 'suppliers' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <SuppliersView user={systemUser} />}
               {activeView === 'settings' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <SettingsView user={systemUser} />}
               {activeView === 'admin' && systemUser?.role === 'owner' && <AdminManagementView />}

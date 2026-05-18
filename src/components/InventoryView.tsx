@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, Loader2, Package } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, Loader2, Package, Download } from 'lucide-react';
 import { Product, SystemUser } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { useCollection, dbService } from '../lib/db';
@@ -8,11 +8,49 @@ import { AddProductModal } from './AddProductModal';
 
 export const InventoryView = ({ user }: { user: SystemUser | null }) => {
   const { data: products, loading } = useCollection<Product>('products', orderBy('name'));
+  const { data: settings } = useCollection<any>('settings');
+  const storeSettings = settings.find(s => s.id === 'store') || { lowStockThreshold: 5 };
+  const lowStockThreshold = storeSettings.lowStockThreshold || 5;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const isAdmin = user?.role === 'owner' || user?.role === 'admin';
+
+  const exportToCSV = () => {
+    if (products.length === 0) {
+      alert("No products to export.");
+      return;
+    }
+
+    const headers = ['ID', 'Name', 'Barcode', 'Category', 'Cost Price', 'Selling Price', 'Stock Level', 'Supplier ID'];
+    const rows = products.map(p => [
+      p.id,
+      p.name,
+      p.barcode,
+      p.category,
+      p.costPrice,
+      p.sellingPrice,
+      p.stockLevel,
+      p.supplierId || 'N/A'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `inventory_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleDelete = async (id: string, name: string) => {
     if (!isAdmin) {
@@ -22,6 +60,14 @@ export const InventoryView = ({ user }: { user: SystemUser | null }) => {
     if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
     try {
       await dbService.remove('products', id);
+      // Log the action
+      await dbService.add('audit_log', {
+        action: 'DELETE_PRODUCT',
+        details: `Deleted product: ${name} (ID: ${id})`,
+        user: user?.name || 'Unknown',
+        type: 'delete',
+        timestamp: new Date()
+      });
     } catch (error) {
       console.error(error);
       alert("Failed to delete product.");
@@ -64,24 +110,34 @@ export const InventoryView = ({ user }: { user: SystemUser | null }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        {isAdmin && (
+        <div className="flex items-center gap-3">
           <button 
-            onClick={() => {
-              setEditingProduct(null);
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider"
+            onClick={exportToCSV}
+            className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-6 py-2.5 rounded-lg hover:bg-slate-50 transition-all shadow-sm uppercase text-xs font-bold tracking-wider"
           >
-            <Plus size={18} />
-            <span>Add New Product</span>
+            <Download size={18} />
+            <span>Export CSV</span>
           </button>
-        )}
+          {isAdmin && (
+            <button 
+              onClick={() => {
+                setEditingProduct(null);
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase text-xs font-bold tracking-wider"
+            >
+              <Plus size={18} />
+              <span>Add New Product</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <AddProductModal 
         isOpen={isModalOpen} 
         onClose={closePortal} 
         product={editingProduct}
+        user={user}
       />
 
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
@@ -132,11 +188,11 @@ export const InventoryView = ({ user }: { user: SystemUser | null }) => {
                   <td className="px-6 py-4">
                     <div className={cn(
                       "text-sm font-black",
-                      product.stockLevel <= 5 ? "text-red-600" : "text-slate-900"
+                      product.stockLevel <= lowStockThreshold ? "text-red-600" : "text-slate-900"
                     )}>
                       {product.stockLevel} UNITS
                     </div>
-                    {product.stockLevel <= 5 && (
+                    {product.stockLevel <= lowStockThreshold && (
                       <span className="text-[9px] text-red-500 uppercase font-black tracking-widest block mt-0.5">CRITICAL LOW</span>
                     )}
                   </td>

@@ -4,15 +4,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { dbService } from '../lib/db';
 import { serverTimestamp } from 'firebase/firestore';
 import { useCollection } from '../lib/db';
-import { Supplier, Product } from '../types';
+import { Supplier, Product, SystemUser } from '../types';
 
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   product?: Product | null;
+  user: SystemUser | null;
 }
 
-export const AddProductModal = ({ isOpen, onClose, product }: AddProductModalProps) => {
+export const AddProductModal = ({ isOpen, onClose, product, user }: AddProductModalProps) => {
   const { data: suppliers } = useCollection<Supplier>('suppliers');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const barcodeRef = useRef<HTMLInputElement>(null);
@@ -86,8 +87,22 @@ export const AddProductModal = ({ isOpen, onClose, product }: AddProductModalPro
 
       if (product) {
         await dbService.update('products', product.id, data);
+        await dbService.add('audit_log', {
+          action: 'UPDATE_PRODUCT',
+          details: `Updated product: ${formData.name}`,
+          user: user?.name || 'Unknown',
+          type: 'update',
+          timestamp: new Date()
+        });
       } else {
         await dbService.add('products', data);
+        await dbService.add('audit_log', {
+          action: 'CREATE_PRODUCT',
+          details: `Created new product: ${formData.name}`,
+          user: user?.name || 'Unknown',
+          type: 'update',
+          timestamp: new Date()
+        });
       }
       
       onClose();

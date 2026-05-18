@@ -13,7 +13,11 @@ import {
   ShieldCheck,
   Search,
   Trash2,
-  TrendingUp
+  TrendingUp,
+  Download,
+  Upload,
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 import { dbService, useCollection } from '../lib/db';
 import { serverTimestamp, orderBy, doc, setDoc } from 'firebase/firestore';
@@ -34,6 +38,8 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
 
   const [isSeeding, setIsSeeding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [dailyTarget, setDailyTarget] = useState(() => Number(localStorage.getItem('dailyTarget')) || 5000);
 
   const saveStoreSettings = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -46,13 +52,86 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
       logoUrl: formData.get('logoUrl') as string,
       taxRate: Number(formData.get('taxRate')),
       receiptFootnote: formData.get('receiptFootnote') as string,
-      managerPin: formData.get('managerPin') as string
+      managerPin: formData.get('managerPin') as string,
+      businessHours: formData.get('businessHours') as string,
+      lowStockThreshold: Number(formData.get('lowStockThreshold')) || 5
     };
     try {
       await dbService.set('settings', 'store', updated);
-      alert("Store identity updated successfully!");
+      alert("Store configuration updated successfully!");
     } catch (err) {
       alert("Failed to update store settings.");
+    }
+  };
+
+  const exportDatabase = async () => {
+    if (user?.role !== 'owner') {
+      alert("Only the store owner can export the full database.");
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const collections = ['products', 'sales', 'customers', 'suppliers', 'purchases', 'settings'];
+      const backup: Record<string, any[]> = {};
+      
+      for (const coll of collections) {
+        backup[coll] = await dbService.list(coll);
+      }
+
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `sarisaripro_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to export database.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const importDatabase = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm("WARNING: Importing data will merge with existing records or overwrite settings. It's recommended to reset the database before a full restore. Proceed?")) return;
+
+    setIsImporting(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const backup = JSON.parse(event.target?.result as string);
+          
+          for (const coll in backup) {
+            const items = backup[coll];
+            for (const item of items) {
+              const { id, ...data } = item;
+              // Avoid overwriting updatedAt with static string if it exists
+              if (data.updatedAt) delete data.updatedAt;
+              await dbService.set(coll, id, data);
+            }
+          }
+          
+          alert("Database imported successfully! Refreshing...");
+          window.location.reload();
+        } catch (err) {
+          console.error(err);
+          alert("Invalid backup file format.");
+        }
+      };
+      reader.readAsText(file);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to read backup file.");
+    } finally {
+      setIsImporting(false);
+      e.target.value = ''; // Reset input
     }
   };
 
@@ -197,6 +276,27 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
                   className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
                 />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Business Hours</label>
+                <input 
+                  name="businessHours"
+                  placeholder="e.g. 7:00 AM - 10:00 PM"
+                  defaultValue={storeSettings.businessHours || 'Open Daily 6 AM - 11 PM'}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                   <AlertTriangle size={12} className="text-amber-500" />
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Low Stock Alert Threshold</label>
+                </div>
+                <input 
+                  name="lowStockThreshold"
+                  type="number"
+                  defaultValue={storeSettings.lowStockThreshold || 5}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                />
+              </div>
             </div>
             <div className="flex justify-end pt-4">
               <button 
@@ -232,6 +332,39 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
               {isSeeding ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
               {isSeeding ? 'Seeding...' : 'Seed Data'}
             </button>
+          </div>
+
+          <div className="pt-6 border-t border-slate-100 flex items-start justify-between">
+            <div className="space-y-1">
+              <h3 className="font-bold text-slate-900">Database Backup & Recovery</h3>
+              <p className="text-sm text-slate-500">Download a full clone of your store data or restore from a previous backup.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={exportDatabase}
+                disabled={isExporting}
+                className="flex items-center gap-2 bg-slate-100 text-slate-700 px-6 py-2.5 rounded-lg hover:bg-slate-200 transition-all font-bold text-xs uppercase tracking-wider"
+              >
+                {isExporting ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+                Export JSON
+              </button>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={importDatabase}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  disabled={isImporting}
+                />
+                <button 
+                  disabled={isImporting}
+                  className="flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-lg hover:bg-slate-800 transition-all font-bold text-xs uppercase tracking-wider"
+                >
+                  {isImporting ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
+                  Import JSON
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="pt-6 border-t border-slate-100 flex items-start justify-between">
