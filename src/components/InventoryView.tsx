@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, Loader2, Package } from 'lucide-react';
 import { Product } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { useCollection, dbService } from '../lib/db';

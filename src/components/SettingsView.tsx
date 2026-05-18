@@ -12,7 +12,8 @@ import {
   Mail, 
   ShieldCheck,
   Search,
-  Trash2
+  Trash2,
+  TrendingUp
 } from 'lucide-react';
 import { dbService, useCollection } from '../lib/db';
 import { serverTimestamp, orderBy } from 'firebase/firestore';

@@ -8,6 +8,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDocs,
   serverTimestamp,
   QueryConstraint
 } from 'firebase/firestore';
@@ -42,6 +43,16 @@ export function useCollection<T>(collectionPath: string, ...queryConstraints: Qu
 }
 
 export const dbService = {
+  async list(collectionPath: string) {
+    try {
+      const snap = await getDocs(collection(db, collectionPath));
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, collectionPath);
+      return [];
+    }
+  },
+
   async add(collectionPath: string, data: any) {
     try {
       return await addDoc(collection(db, collectionPath), {
