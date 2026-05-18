@@ -30,11 +30,11 @@ export const SalesView = () => {
 
     let isInDateRange = true;
     if (dateFilter === 'today') {
-      isInDateRange = isWithinInterval(saleDate, { start: startOfDay(now), end: endOfDay(now) });
+      isInDateRange = saleDate >= startOfDay(now);
     } else if (dateFilter === '7d') {
-      isInDateRange = isWithinInterval(saleDate, { start: startOfDay(subDays(now, 7)), end: endOfDay(now) });
+      isInDateRange = saleDate >= startOfDay(subDays(now, 7));
     } else if (dateFilter === '30d') {
-      isInDateRange = isWithinInterval(saleDate, { start: startOfDay(subDays(now, 30)), end: endOfDay(now) });
+      isInDateRange = saleDate >= startOfDay(subDays(now, 30));
     }
 
     const matchesSearch = sale.id.toLowerCase().includes(searchTerm.toLowerCase()) || 

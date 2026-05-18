@@ -44,7 +44,8 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
       address: formData.get('address') as string,
       phone: formData.get('phone') as string,
       logoUrl: formData.get('logoUrl') as string,
-      taxRate: Number(formData.get('taxRate'))
+      taxRate: Number(formData.get('taxRate')),
+      receiptFootnote: formData.get('receiptFootnote') as string
     };
     try {
       await dbService.set('settings', 'store', updated);
@@ -186,8 +187,17 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
                   className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
                 />
               </div>
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Receipt Footnote / Thank You Message</label>
+                <input 
+                  name="receiptFootnote"
+                  defaultValue={storeSettings.receiptFootnote || 'THANK YOU FOR YOUR BUSINESS!'}
+                  placeholder="e.g. Please come back again!"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                />
+              </div>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-4">
               <button 
                 type="submit"
                 className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-blue-700 transition-shadow shadow-lg shadow-blue-200 flex items-center gap-2"

@@ -32,13 +32,14 @@ export function useCollection<T>(collectionPath: string, ...queryConstraints: Qu
       setData(result);
       setLoading(false);
     }, (err) => {
+      console.error(`Collection error [${collectionPath}]:`, err);
       handleFirestoreError(err, OperationType.LIST, collectionPath);
       setError(err.message);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [collectionPath, JSON.stringify(queryConstraints)]);
+  }, [collectionPath]); // Simplified dependency array for stability
 
   return { data, loading, error };
 }

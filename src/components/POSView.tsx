@@ -16,7 +16,8 @@ import {
   Loader2,
   CheckCircle2,
   Barcode,
-  ShoppingBag
+  ShoppingBag,
+  LogOut
 } from 'lucide-react';
 import { Product, SaleItem, SystemUser } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
@@ -24,7 +25,7 @@ import { Scanner } from './Scanner';
 import { useCollection, dbService } from '../lib/db';
 import { orderBy, serverTimestamp } from 'firebase/firestore';
 
-export const POSView = ({ user }: { user: SystemUser | null }) => {
+export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?: () => void }) => {
   const isCashierMode = user?.role === 'cashier';
   const { data: products, loading } = useCollection<Product>('products', orderBy('name'));
   const { data: storeSettingsData } = useCollection<any>('settings');
@@ -221,9 +222,19 @@ export const POSView = ({ user }: { user: SystemUser | null }) => {
             <h1 className="text-xl font-black tracking-tighter text-blue-400 uppercase">{storeSettings.name}</h1>
             <span className="text-[10px] text-slate-400 bg-slate-700 px-2 py-0.5 rounded">STATION 01</span>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-bold">{new Date().toLocaleTimeString()}</p>
-            <p className="text-[10px] text-slate-400">{new Date().toLocaleDateString()}</p>
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <p className="text-sm font-bold">{new Date().toLocaleTimeString()}</p>
+              <p className="text-[10px] text-slate-400">{new Date().toLocaleDateString()}</p>
+            </div>
+            <button 
+              onClick={onLogout}
+              className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 group"
+              title="Logout"
+            >
+              <LogOut size={20} />
+              <span className="text-xs font-black uppercase tracking-widest hidden lg:inline">Logout Account</span>
+            </button>
           </div>
         </div>
 
@@ -408,8 +419,7 @@ export const POSView = ({ user }: { user: SystemUser | null }) => {
           </div>
         )}
 
-        {/* Re-use Thermal Receipt Print Layout */}
-        <div className="hidden print:block print:w-full print:bg-white text-black font-mono p-4 print-container">
+        <div className="absolute -left-[9999px] top-0 print:static print:block print:w-full print:bg-white text-black font-mono p-4 print-container">
           <div className="text-center space-y-1 mb-4">
             {storeSettings.logoUrl && (
               <div className="flex justify-center mb-2">
@@ -424,7 +434,8 @@ export const POSView = ({ user }: { user: SystemUser | null }) => {
           
           <div className="border-t border-b border-black py-2 my-2 space-y-1 text-xs">
             <div className="flex justify-between">
-              <span>DATE: {new Date().toLocaleString()}</span>
+              <span>DATE: {new Date().toLocaleDateString()}</span>
+              <span>TIME: {new Date().toLocaleTimeString()}</span>
             </div>
             <div className="flex justify-between">
               <span>ORDER ID: {lastTransaction?.orderId}</span>
@@ -472,9 +483,9 @@ export const POSView = ({ user }: { user: SystemUser | null }) => {
             </div>
           </div>
 
-          <div className="text-center mt-6 text-[10px]">
-            <p className="font-bold">THANK YOU FOR YOUR BUSINESS!</p>
-            <p>SariSari Pro POS Systems</p>
+          <div className="text-center mt-6 text-[10px] space-y-1">
+            <p className="font-bold">{storeSettings.receiptFootnote || 'THANK YOU FOR YOUR BUSINESS!'}</p>
+            <p className="opacity-50">SariSari Pro POS Systems</p>
           </div>
         </div>
       </div>
@@ -707,7 +718,7 @@ export const POSView = ({ user }: { user: SystemUser | null }) => {
       )}
 
       {/* Hidden Thermal Receipt Print Layout */}
-      <div className="hidden print:block print:w-full print:bg-white text-black font-mono p-4 print-container">
+      <div className="absolute -left-[9999px] top-0 print:static print:block print:w-full print:bg-white text-black font-mono p-4 print-container">
         <div className="text-center space-y-1 mb-4">
           {storeSettings.logoUrl && (
             <div className="flex justify-center mb-2">
@@ -722,13 +733,14 @@ export const POSView = ({ user }: { user: SystemUser | null }) => {
         
         <div className="border-t border-b border-black py-2 my-2 space-y-1 text-xs">
           <div className="flex justify-between">
-            <span>DATE: {new Date().toLocaleString()}</span>
+            <span>DATE: {new Date().toLocaleDateString()}</span>
+            <span>TIME: {new Date().toLocaleTimeString()}</span>
           </div>
           <div className="flex justify-between">
             <span>ORDER ID: {lastTransaction?.orderId}</span>
           </div>
           <div className="flex justify-between">
-            <span>CASHIER: {document.querySelector('.staff-name')?.textContent || 'Staff'}</span>
+            <span>CASHIER: {user?.name || 'Staff Member'}</span>
           </div>
         </div>
 
@@ -770,9 +782,9 @@ export const POSView = ({ user }: { user: SystemUser | null }) => {
           </div>
         </div>
 
-        <div className="text-center mt-6 text-[10px]">
-          <p>THANKS FOR SHOPPING!</p>
-          <p>This is not an official receipt.</p>
+        <div className="text-center mt-6 text-[10px] space-y-1">
+          <p className="font-bold">{storeSettings.receiptFootnote || 'THANKS FOR SHOPPING!'}</p>
+          <p className="opacity-50">SariSari Pro POS Systems</p>
         </div>
       </div>
     </div>

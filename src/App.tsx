@@ -284,7 +284,7 @@ export default function App() {
               className={cn(isCashier && "h-full")}
             >
               {activeView === 'dashboard' && <DashboardView user={systemUser} />}
-              {activeView === 'pos' && <POSView user={systemUser} />}
+              {activeView === 'pos' && <POSView user={systemUser} onLogout={handleLogout} />}
               {activeView === 'inventory' && <InventoryView user={systemUser} />}
               {activeView === 'sales' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <SalesView />}
               {activeView === 'customers' && <CustomersView user={systemUser} />}
