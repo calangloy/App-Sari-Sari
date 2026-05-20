@@ -185,19 +185,28 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filtered.map((user) => (
-                  <tr key={user.id} className="group hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-400 group-hover:bg-white group-hover:text-blue-500 transition-colors">
-                          {user.name[0]}
+                {filtered.map((user) => {
+                  const ownerObj = user.role !== 'owner' ? users.find(u => u.id === user.storeId && u.role === 'owner') : null;
+                  return (
+                    <tr key={user.id} className="group hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-400 group-hover:bg-white group-hover:text-blue-500 transition-colors">
+                            {user.name ? user.name[0] : '?'}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 leading-none">{user.name}</p>
+                            <p className="text-xs text-slate-500 mt-1">@{user.username}</p>
+                            {ownerObj && (
+                              <div className="mt-1.5">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-blue-600 bg-blue-50/70 border border-blue-100 px-2 py-0.5 rounded-md inline-block">
+                                  Managed by: {ownerObj.name} (@{ownerObj.username})
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-900 leading-none">{user.name}</p>
-                          <p className="text-xs text-slate-500 mt-1">@{user.username}</p>
-                        </div>
-                      </div>
-                    </td>
+                      </td>
                     <td className="px-6 py-4">
                       <select 
                         value={user.role}
@@ -288,7 +297,8 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
                       )}
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>
