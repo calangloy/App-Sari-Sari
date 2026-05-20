@@ -132,10 +132,12 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
     }
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.barcode.includes(searchTerm)
-  );
+  const filteredProducts = products.filter(p => {
+    const nameVal = p.name || '';
+    const barcodeVal = p.barcode || '';
+    return nameVal.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           barcodeVal.includes(searchTerm);
+  });
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;

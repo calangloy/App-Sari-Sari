@@ -1,5 +1,5 @@
 import { initializeApp, getApp, getApps, deleteApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updatePassword } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer, setDoc, serverTimestamp } from 'firebase/firestore';
 
 // In AI Studio, this file is generated after set_up_firebase
@@ -22,6 +22,41 @@ export const createInternalAuthUser = async (username: string, password: string)
     return userCredential.user.uid;
   } finally {
     // Delete the secondary app instance to clean up
+    await deleteApp(secondaryApp);
+  }
+};
+
+// Helper to update another user's password securely safely by authenticating secondary app
+export const updateInternalAuthUserPassword = async (username: string, oldPassword: string, newPassword: string) => {
+  const email = `${username.toLowerCase().trim()}@sarisari.pos`;
+  const secondaryAppName = `Update-${Date.now()}`;
+  const secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
+  const secondaryAuth = getAuth(secondaryApp);
+  
+  try {
+    try {
+      await signInWithEmailAndPassword(secondaryAuth, email, oldPassword);
+    } catch (err) {
+      // If oldPassword doc was out of sync, try '1234' or original fallback 'Admin1234'
+      if (oldPassword !== '1234') {
+        try {
+          await signInWithEmailAndPassword(secondaryAuth, email, '1234');
+        } catch (err2) {
+          await signInWithEmailAndPassword(secondaryAuth, email, 'Admin1234');
+        }
+      } else {
+        try {
+          await signInWithEmailAndPassword(secondaryAuth, email, 'Admin1234');
+        } catch (err3) {
+          throw err;
+        }
+      }
+    }
+    
+    if (secondaryAuth.currentUser) {
+      await updatePassword(secondaryAuth.currentUser, newPassword);
+    }
+  } finally {
     await deleteApp(secondaryApp);
   }
 };

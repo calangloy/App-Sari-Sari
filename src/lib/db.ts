@@ -57,20 +57,26 @@ export function useCollection<T>(collectionPath: string, ...queryConstraints: Qu
 
   useEffect(() => {
     setLoading(true);
-    let constraints = [...queryConstraints];
-    if (TENANT_COLLECTIONS.includes(collectionPath) && storeId) {
-      constraints.push(where('storeId', '==', storeId));
-    }
-    const q = query(collection(db, collectionPath), ...constraints);
+    // Avoid compound queries with multiple fields that trigger Firestore index errors
+    const q = query(collection(db, collectionPath), ...queryConstraints);
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const result: T[] = [];
       snapshot.forEach((doc) => {
         let id = doc.id;
+        const data = doc.data() as any;
+
+        // Perform multi-tenant scoping on the client side
+        if (TENANT_COLLECTIONS.includes(collectionPath) && storeId) {
+          if (data && data.storeId !== storeId) {
+            return; // Skip records from other stores
+          }
+        }
+
         if (collectionPath === 'settings' && storeId && id.endsWith(`_${storeId}`)) {
           id = id.replace(`_${storeId}`, '');
         }
-        result.push({ id, ...doc.data() } as T);
+        result.push({ id, ...data } as T);
       });
       setData(result);
       setLoading(false);
@@ -91,21 +97,23 @@ export const dbService = {
   async list(collectionPath: string) {
     try {
       const currentStoreId = getGlobalStoreId();
-      let q = collection(db, collectionPath);
-      let snap;
-      if (TENANT_COLLECTIONS.includes(collectionPath) && currentStoreId) {
-        const qRef = query(q, where('storeId', '==', currentStoreId));
-        snap = await getDocs(qRef);
-      } else {
-        snap = await getDocs(q);
-      }
-      return snap.docs.map(doc => {
-        let id = doc.id;
-        if (collectionPath === 'settings' && currentStoreId && id.endsWith(`_${currentStoreId}`)) {
-          id = id.replace(`_${currentStoreId}`, '');
-        }
-        return { id, ...doc.data() };
-      });
+      const q = collection(db, collectionPath);
+      const snap = await getDocs(q);
+
+      return snap.docs
+        .filter(doc => {
+          if (TENANT_COLLECTIONS.includes(collectionPath) && currentStoreId) {
+            return doc.data().storeId === currentStoreId;
+          }
+          return true;
+        })
+        .map(doc => {
+          let id = doc.id;
+          if (collectionPath === 'settings' && currentStoreId && id.endsWith(`_${currentStoreId}`)) {
+            id = id.replace(`_${currentStoreId}`, '');
+          }
+          return { id, ...doc.data() };
+        });
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, collectionPath);
       return [];

@@ -84,10 +84,12 @@ export const InventoryView = ({ user }: { user: SystemUser | null }) => {
     setEditingProduct(null);
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.barcode.includes(searchTerm)
-  );
+  const filteredProducts = products.filter(p => {
+    const nameVal = p.name || '';
+    const barcodeVal = p.barcode || '';
+    return nameVal.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           barcodeVal.includes(searchTerm);
+  });
 
   if (loading) {
     return (

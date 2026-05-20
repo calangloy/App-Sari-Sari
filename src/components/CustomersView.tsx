@@ -27,10 +27,12 @@ export const CustomersView = ({ user }: { user: SystemUser | null }) => {
     }
   };
 
-  const filtered = customers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.phone?.includes(searchTerm)
-  );
+  const filtered = customers.filter(c => {
+    const nameVal = c.name || '';
+    const phoneVal = c.phone || '';
+    return nameVal.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           phoneVal.includes(searchTerm);
+  });
 
   if (loading) {
     return (

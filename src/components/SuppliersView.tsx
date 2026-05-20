@@ -42,10 +42,12 @@ export const SuppliersView = ({ user }: { user: SystemUser | null }) => {
     }
   };
 
-  const filtered = suppliers.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = suppliers.filter(s => {
+    const nameVal = s.name || '';
+    const contactVal = s.contactPerson || '';
+    return nameVal.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           contactVal.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   if (loading) {
     return (

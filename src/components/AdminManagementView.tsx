@@ -9,12 +9,15 @@ import {
   Award,
   Loader2,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Key
 } from 'lucide-react';
 import { useCollection, dbService } from '../lib/db';
 import { SystemUser } from '../types';
 import { orderBy, serverTimestamp, doc, setDoc } from 'firebase/firestore';
-import { db, createInternalAuthUser } from '../lib/firebase';
+import { db, createInternalAuthUser, updateInternalAuthUserPassword } from '../lib/firebase';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -27,6 +30,39 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
     username: '',
     role: 'cashier' as 'cashier' | 'admin' | 'owner'
   });
+
+  // Inline Password Management states
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [newPasswordValue, setNewPasswordValue] = useState('');
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  const handleSavePassword = async (userToUpdate: SystemUser) => {
+    const freshPassword = newPasswordValue.trim();
+    if (freshPassword.length < 4) {
+      alert("Password must be at least 4 characters long.");
+      return;
+    }
+    setIsSavingPassword(true);
+    try {
+      const uName = userToUpdate.uniqueUsername || userToUpdate.username;
+      const currentPass = (userToUpdate as any).password || '1234';
+
+      // Update in Firebase Auth (using our robust sandbox auth changer helper)
+      await updateInternalAuthUserPassword(uName, currentPass, freshPassword);
+
+      // Save into the Firestore document
+      await dbService.update('users', userToUpdate.id, { password: freshPassword });
+
+      setEditingUserId(null);
+      alert('Password updated successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Failed to update user password. Ensure it has at least 6 characters.');
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,8 +79,8 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
         uniqueUsername = `${sanitizedUsername}_${storeIdContext}`;
       }
 
-      // 1. Create Auth user first (with fixed password: Admin1234)
-      const uid = await createInternalAuthUser(uniqueUsername, 'Admin1234');
+      // 1. Create Auth user first with fixed password: 1234 (per request)
+      const uid = await createInternalAuthUser(uniqueUsername, '1234');
       
       // 2. Create Firestore record with the SAME id
       await setDoc(doc(db, 'users', uid), {
@@ -52,13 +88,14 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
         username: sanitizedUsername,
         uniqueUsername: uniqueUsername,
         role: newUserData.role,
+        password: '1234', // Stored so both managers and the developer can see & edit
         storeId: roleIsOwner ? uid : (currentUser.storeId || currentUser.id),
         createdAt: serverTimestamp()
       });
 
       setIsAddingUser(false);
       setNewUserData({ name: '', username: '', role: 'cashier' });
-      alert(`Account created successfully! Login ID: ${sanitizedUsername} | Password: Admin1234`);
+      alert(`Account created successfully! Login ID: ${sanitizedUsername} | Password: 1234`);
     } catch (error: any) {
       console.error(error);
       alert(error.message || "Failed to add user.");
@@ -85,8 +122,10 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
 
   const resolvedStoreId = currentUser?.storeId || currentUser?.id;
   const filtered = users.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          u.username.toLowerCase().includes(searchTerm.toLowerCase());
+    const nameVal = u.name || '';
+    const usernameVal = u.username || '';
+    const matchesSearch = nameVal.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          usernameVal.toLowerCase().includes(searchTerm.toLowerCase());
     if (!matchesSearch) return false;
 
     // System Developer / Administrator (isSupreme) can see all users globally
@@ -141,6 +180,7 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
                 <tr className="border-b border-slate-100 bg-slate-50/50">
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">User</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Role</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Password Manager</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
@@ -177,13 +217,75 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
                         <option value="cashier">Cashier</option>
                       </select>
                     </td>
+                    <td className="px-6 py-4">
+                      {editingUserId === user.id ? (
+                        <div className="flex items-center gap-1 animate-in fade-in duration-200">
+                          <input
+                            type="text"
+                            value={newPasswordValue}
+                            onChange={(e) => setNewPasswordValue(e.target.value)}
+                            className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-black focus:outline-none focus:ring-2 focus:ring-blue-500 w-32 animate-pulse"
+                            placeholder="6+ chars"
+                          />
+                          <button
+                            disabled={isSavingPassword}
+                            onClick={() => handleSavePassword(user)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all disabled:opacity-50"
+                            title="Save"
+                          >
+                            {isSavingPassword ? (
+                              <Loader2 className="animate-spin text-green-500" size={14} />
+                            ) : (
+                              <CheckCircle2 size={16} />
+                            )}
+                          </button>
+                          <button
+                            disabled={isSavingPassword}
+                            onClick={() => setEditingUserId(null)}
+                            className="p-2 text-slate-400 hover:bg-slate-55 rounded-xl transition-all"
+                            title="Cancel"
+                          >
+                            <span className="text-[10px] font-black uppercase">Cancel</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100/80 px-2.5 py-1 rounded-lg border border-slate-200/50">
+                            {visiblePasswords[user.id] ? ((user as any).password || '1234') : '••••••••'}
+                          </span>
+                          <button
+                            onClick={() => setVisiblePasswords({
+                              ...visiblePasswords,
+                              [user.id]: !visiblePasswords[user.id]
+                            })}
+                            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                            title={visiblePasswords[user.id] ? "Hide password" : "Show password"}
+                          >
+                            {visiblePasswords[user.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingUserId(user.id);
+                              setNewPasswordValue((user as any).password || '1234');
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-black uppercase text-blue-600 hover:bg-blue-50 border border-blue-100 rounded-lg transition-all"
+                            title="Edit Password"
+                          >
+                            <Key size={10} />
+                            <span>Edit</span>
+                          </button>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => handleDeleteUser(user.id, user.name)}
-                        className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      {(user.role !== 'owner' || currentUser?.isSupreme) && (
+                        <button 
+                          onClick={() => handleDeleteUser(user.id, user.name)}
+                          className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

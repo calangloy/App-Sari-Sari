@@ -28,11 +28,14 @@ export const AuditLogView = () => {
   const { data: logs, loading } = useCollection<AuditRecord>('audit_log', orderBy('timestamp', 'desc'), limit(100));
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredLogs = logs.filter(log => 
-    log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.user.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredLogs = logs.filter(log => {
+    const actionVal = log.action || '';
+    const detailsVal = log.details || '';
+    const userVal = log.user || '';
+    return actionVal.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           detailsVal.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           userVal.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
