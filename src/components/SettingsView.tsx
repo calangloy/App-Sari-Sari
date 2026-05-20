@@ -40,6 +40,8 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isSavingSecurity, setIsSavingSecurity] = useState(false);
+  const [isSavingGcash, setIsSavingGcash] = useState(false);
   const [dailyTarget, setDailyTarget] = useState(() => Number(localStorage.getItem('dailyTarget')) || 5000);
 
   const saveStoreSettings = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -52,7 +54,6 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
       logoUrl: formData.get('logoUrl') as string,
       taxRate: Number(formData.get('taxRate')),
       receiptFootnote: formData.get('receiptFootnote') as string,
-      managerPin: formData.get('managerPin') as string,
       businessHours: formData.get('businessHours') as string,
       lowStockThreshold: Number(formData.get('lowStockThreshold')) || 5
     };
@@ -61,6 +62,39 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
       alert("Store configuration updated successfully!");
     } catch (err) {
       alert("Failed to update store settings.");
+    }
+  };
+
+  const saveSecurityPolicy = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const updated = {
+      managerPin: formData.get('managerPin') as string,
+      autoLogout: formData.get('autoLogout') as string,
+    };
+    setIsSavingSecurity(true);
+    try {
+      await dbService.set('settings', 'store', updated);
+      alert("Security policy updated successfully!");
+    } catch (err) {
+      alert("Failed to update security policy.");
+    } finally {
+      setIsSavingSecurity(false);
+    }
+  };
+
+  const saveGcashSettings = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const gcashApiKey = (formData.get('gcashApiKey') as string || '').trim();
+    setIsSavingGcash(true);
+    try {
+      await dbService.set('settings', 'store', { gcashApiKey });
+      alert("GCash API Configuration Saved successfully!");
+    } catch (err) {
+      alert("Failed to save GCash API Configuration.");
+    } finally {
+      setIsSavingGcash(false);
     }
   };
 
@@ -213,7 +247,7 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
   // Skip the rest of the file view for now to target the specific removal
 
   return (
-    <div className="max-w-4xl space-y-8 animate-in fade-in duration-500">
+    <div key={storeSettingsData.length > 0 ? 'loaded' : 'loading'} className="max-w-4xl space-y-8 animate-in fade-in duration-500">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 bg-slate-50/50">
           <h2 className="font-bold text-slate-900 flex items-center gap-2">
@@ -387,8 +421,8 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
             E-Wallet Integrations
           </h2>
         </div>
-        <div className="p-8 space-y-6">
-          <div className="space-y-4">
+        <div className="p-8">
+          <form onSubmit={saveGcashSettings} className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <h3 className="font-bold text-slate-900">GCash Business API</h3>
@@ -396,9 +430,9 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
               </div>
               <div className={cn(
                 "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                localStorage.getItem('gcash_api_key') ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"
+                storeSettings.gcashApiKey ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"
               )}>
-                {localStorage.getItem('gcash_api_key') ? 'Connected' : 'Not Linked'}
+                {storeSettings.gcashApiKey ? 'Connected' : 'Not Linked'}
               </div>
             </div>
             
@@ -407,22 +441,22 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Merchant API Key</label>
                 <input 
                   type="password" 
+                  name="gcashApiKey"
                   placeholder="pk_live_************************"
-                  defaultValue={localStorage.getItem('gcash_api_key') || ''}
-                  onChange={(e) => {
-                    if (e.target.value) localStorage.setItem('gcash_api_key', e.target.value);
-                  }}
+                  defaultValue={storeSettings.gcashApiKey || ''}
                   className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                 />
               </div>
               <button 
-                onClick={() => alert("GCash API Configuration Saved!")}
-                className="self-end bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-blue-700 transition-all"
+                type="submit"
+                disabled={isSavingGcash}
+                className="self-end bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-blue-700 transition-all flex items-center gap-1.5 disabled:opacity-50"
               >
-                Link Account
+                {isSavingGcash ? <Loader2 className="animate-spin" size={14} /> : null}
+                {isSavingGcash ? 'Saving...' : 'Link Account'}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
 
@@ -486,7 +520,7 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
             Security & Access
           </h2>
         </div>
-        <div className="p-8 space-y-8">
+        <form onSubmit={saveSecurityPolicy} className="p-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Global Manager PIN</label>
@@ -502,19 +536,24 @@ export const SettingsView = ({ user }: { user: SystemUser | null }) => {
             </div>
             <div className="space-y-3">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Auto-Logout Timer</label>
-              <select className="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>15 Minutes of Inactivity</option>
-                <option>30 Minutes of Inactivity</option>
-                <option>1 Hour of Inactivity</option>
-                <option>Never</option>
+              <select name="autoLogout" defaultValue={storeSettings.autoLogout || 'Never'} className="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="15">15 Minutes of Inactivity</option>
+                <option value="30">30 Minutes of Inactivity</option>
+                <option value="60">1 Hour of Inactivity</option>
+                <option value="Never">Never</option>
               </select>
             </div>
           </div>
           
-          <button className="bg-slate-900 text-white w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">
-            Save Security Policy
+          <button 
+            type="submit"
+            disabled={isSavingSecurity}
+            className="bg-slate-900 text-white w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200 flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {isSavingSecurity ? <Loader2 className="animate-spin" size={16} /> : null}
+            {isSavingSecurity ? 'Saving...' : 'Save Security Policy'}
           </button>
-        </div>
+        </form>
       </div>
 
     </div>

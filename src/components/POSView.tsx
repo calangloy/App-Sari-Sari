@@ -144,7 +144,7 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
 
     // GCash Check
     if (paymentMethod === 'e-wallet') {
-      const apiKey = localStorage.getItem('gcash_api_key');
+      const apiKey = storeSettings?.gcashApiKey;
       if (!apiKey) {
         alert("GCash API not linked. Please configure it in settings.");
         return;
