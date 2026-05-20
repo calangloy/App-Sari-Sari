@@ -103,6 +103,10 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
   };
 
   const updateRole = async (userId: string, newRole: string) => {
+    if (userId === currentUser?.id) {
+      alert("You cannot change your own role!");
+      return;
+    }
     try {
       await dbService.update('users', userId, { role: newRole });
     } catch (error) {
@@ -122,6 +126,9 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
 
   const resolvedStoreId = currentUser?.storeId || currentUser?.id;
   const filtered = users.filter(u => {
+    // Exclude the current logged-in user themselves from the team list
+    if (u.id === currentUser?.id) return false;
+
     const nameVal = u.name || '';
     const usernameVal = u.username || '';
     const matchesSearch = nameVal.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -211,13 +218,13 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
                       <select 
                         value={user.role}
                         onChange={(e) => updateRole(user.id, e.target.value)}
-                        disabled={user.role === 'owner' && !currentUser?.isSupreme}
+                        disabled={(user.role === 'owner' && !currentUser?.isSupreme) || user.id === currentUser?.id}
                         className={cn(
                           "text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border-none focus:ring-2 focus:ring-blue-500",
                           user.role === 'owner' ? "bg-amber-100 text-amber-600" :
                           user.role === 'admin' ? "bg-blue-100 text-blue-600" :
                           "bg-slate-100 text-slate-600",
-                          (user.role === 'owner' && !currentUser?.isSupreme) && "opacity-85 cursor-not-allowed"
+                          ((user.role === 'owner' && !currentUser?.isSupreme) || user.id === currentUser?.id) && "opacity-85 cursor-not-allowed"
                         )}
                       >
                         {currentUser?.isSupreme && <option value="owner">Owner</option>}

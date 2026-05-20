@@ -25,8 +25,18 @@ import { Scanner } from './Scanner';
 import { useCollection, dbService } from '../lib/db';
 import { orderBy, serverTimestamp } from 'firebase/firestore';
 
-export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?: () => void }) => {
-  const isCashierMode = user?.role === 'cashier';
+export const POSView = ({ 
+  user, 
+  onLogout, 
+  isOwnerCashierMode = false, 
+  onExitCashierMode 
+}: { 
+  user: SystemUser | null; 
+  onLogout?: () => void;
+  isOwnerCashierMode?: boolean;
+  onExitCashierMode?: () => void;
+}) => {
+  const isCashierMode = user?.role === 'cashier' || isOwnerCashierMode;
   const { data: products, loading } = useCollection<Product>('products', orderBy('name'));
   const { data: storeSettingsData } = useCollection<any>('settings');
   const storeSettings = storeSettingsData.find(s => s.id === 'store') || {
@@ -252,12 +262,14 @@ export const POSView = ({ user, onLogout }: { user: SystemUser | null; onLogout?
               <p className="text-[10px] text-slate-400">{new Date().toLocaleDateString()}</p>
             </div>
             <button 
-              onClick={onLogout}
+              onClick={isOwnerCashierMode ? onExitCashierMode : onLogout}
               className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 group"
-              title="Logout"
+              title={isOwnerCashierMode ? "Exit Cashier Mode" : "Logout"}
             >
               <LogOut size={20} />
-              <span className="text-xs font-black uppercase tracking-widest hidden lg:inline">Logout Account</span>
+              <span className="text-xs font-black uppercase tracking-widest hidden lg:inline">
+                {isOwnerCashierMode ? 'Exit Cashier Mode' : 'Logout Account'}
+              </span>
             </button>
           </div>
         </div>

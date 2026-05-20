@@ -48,6 +48,7 @@ export default function App() {
   const [systemUser, setSystemUser] = useState<SystemUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [selectedStoreId, setSelectedStoreId] = useState<string>('');
+  const [isOwnerCashierMode, setIsOwnerCashierMode] = useState(() => localStorage.getItem('isOwnerCashierMode') === 'true');
 
   const { data: sales } = useCollection<any>('sales');
   const { data: allUsers } = useCollection<SystemUser>('users');
@@ -63,12 +64,12 @@ export default function App() {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  // Auto-switch to POS for cashiers
+  // Auto-switch to POS for cashiers or owner cashier mode
   useEffect(() => {
-    if (systemUser?.role === 'cashier') {
+    if (systemUser?.role === 'cashier' || (systemUser?.role === 'owner' && isOwnerCashierMode)) {
       setActiveView('pos');
     }
-  }, [systemUser]);
+  }, [systemUser, isOwnerCashierMode]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
@@ -79,6 +80,18 @@ export default function App() {
         let sUser: SystemUser | null = null;
         if (userDoc.exists()) {
           sUser = { id: userDoc.id, ...userDoc.data() } as SystemUser;
+          
+          // AUTO-RESTORE ROLE FOR OWNER:
+          // If the database has incorrectly marked the owner as a cashier/admin but they are the primary owner of this store / account, restore their role to 'owner'
+          const isPrimaryOwner = sUser.id === sUser.storeId || !sUser.storeId || authUser.email === 'CalangLoy@gmail.com';
+          if (isPrimaryOwner && sUser.role !== 'owner') {
+            sUser.role = 'owner';
+            try {
+              await setDoc(userDocRef, { role: 'owner' }, { merge: true });
+            } catch (err) {
+              console.error("Failed to automatically restore owner role in Firestore:", err);
+            }
+          }
         } else {
           // If user exists in Auth but not in Firestore, create a default profile
           const isSupreme = authUser.email === 'CalangLoy@gmail.com' || authUser.providerData.some(p => p.providerId === 'google.com');
@@ -103,6 +116,14 @@ export default function App() {
         const hasGoogleProvider = authUser.providerData.some(p => p.providerId === 'google.com') || authUser.email === 'CalangLoy@gmail.com';
         if (hasGoogleProvider && sUser) {
           sUser.isSupreme = true;
+          if (sUser.role !== 'owner') {
+            sUser.role = 'owner';
+            try {
+              await setDoc(userDocRef, { role: 'owner' }, { merge: true });
+            } catch (err) {
+              console.error("Failed safety restore owner role:", err);
+            }
+          }
         }
         setSystemUser(sUser);
       } else {
@@ -168,7 +189,7 @@ export default function App() {
     navItems.push({ id: 'admin', label: 'Team', icon: ShieldCheck });
   }
 
-  const isCashier = systemUser?.role === 'cashier';
+  const isCashier = systemUser?.role === 'cashier' || (systemUser?.role === 'owner' && isOwnerCashierMode);
 
   const totalRevenueToday = sales
     .filter(s => {
@@ -257,6 +278,20 @@ export default function App() {
           )}
 
           <div className="p-4 border-t border-slate-700 space-y-2">
+            {systemUser?.role === 'owner' && (
+              <button
+                onClick={() => {
+                  localStorage.setItem('isOwnerCashierMode', 'true');
+                  setIsOwnerCashierMode(true);
+                  setActiveView('pos');
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                title="Switch to Cashier Mode"
+              >
+                <ShoppingCart size={20} className="shrink-0 text-slate-500 group-hover:text-slate-300" />
+                {isSidebarOpen && <span className="text-sm">Cashier Mode</span>}
+              </button>
+            )}
             {(systemUser?.role === 'owner' || systemUser?.role === 'admin') && (
               <button
                 onClick={() => setActiveView('settings')}
@@ -331,7 +366,18 @@ export default function App() {
               className={cn(isCashier && "h-full")}
             >
               {activeView === 'dashboard' && <DashboardView user={systemUser} />}
-              {activeView === 'pos' && <POSView user={systemUser} onLogout={handleLogout} />}
+              {activeView === 'pos' && (
+                <POSView 
+                  user={systemUser} 
+                  onLogout={handleLogout} 
+                  isOwnerCashierMode={isOwnerCashierMode && systemUser?.role === 'owner'}
+                  onExitCashierMode={() => {
+                    localStorage.setItem('isOwnerCashierMode', 'false');
+                    setIsOwnerCashierMode(false);
+                    setActiveView('dashboard');
+                  }}
+                />
+              )}
               {activeView === 'inventory' && <InventoryView user={systemUser} />}
               {activeView === 'sales' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <SalesView />}
               {activeView === 'activity' && <AuditLogView />}
