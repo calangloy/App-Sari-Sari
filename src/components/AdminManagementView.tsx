@@ -39,14 +39,14 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
 
   const handleSavePassword = async (userToUpdate: SystemUser) => {
     const freshPassword = newPasswordValue.trim();
-    if (freshPassword.length < 4) {
-      alert("Password must be at least 4 characters long.");
+    if (freshPassword.length < 6) {
+      alert("Password must be at least 6 characters long.");
       return;
     }
     setIsSavingPassword(true);
     try {
       const uName = userToUpdate.uniqueUsername || userToUpdate.username;
-      const currentPass = (userToUpdate as any).password || '1234';
+      const currentPass = (userToUpdate as any).password || '123456';
 
       // Update in Firebase Auth (using our robust sandbox auth changer helper)
       await updateInternalAuthUserPassword(uName, currentPass, freshPassword);
@@ -79,8 +79,8 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
         uniqueUsername = `${sanitizedUsername}_${storeIdContext}`;
       }
 
-      // 1. Create Auth user first with fixed password: 1234 (per request)
-      const uid = await createInternalAuthUser(uniqueUsername, '1234');
+      // 1. Create Auth user first with fixed password: 123456 (per firebase minimum 6 character validation)
+      const uid = await createInternalAuthUser(uniqueUsername, '123456');
       
       // 2. Create Firestore record with the SAME id
       await setDoc(doc(db, 'users', uid), {
@@ -88,14 +88,14 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
         username: sanitizedUsername,
         uniqueUsername: uniqueUsername,
         role: newUserData.role,
-        password: '1234', // Stored so both managers and the developer can see & edit
+        password: '123456', // Stored so both managers and the developer can see & edit
         storeId: roleIsOwner ? uid : (currentUser.storeId || currentUser.id),
         createdAt: serverTimestamp()
       });
 
       setIsAddingUser(false);
       setNewUserData({ name: '', username: '', role: 'cashier' });
-      alert(`Account created successfully! Login ID: ${sanitizedUsername} | Password: 1234`);
+      alert(`Account created successfully! Login ID: ${sanitizedUsername} | Password: 123456`);
     } catch (error: any) {
       console.error(error);
       alert(error.message || "Failed to add user.");
@@ -251,7 +251,7 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
                       ) : (
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100/80 px-2.5 py-1 rounded-lg border border-slate-200/50">
-                            {visiblePasswords[user.id] ? ((user as any).password || '1234') : '••••••••'}
+                            {visiblePasswords[user.id] ? ((user as any).password || '123456') : '••••••••'}
                           </span>
                           <button
                             onClick={() => setVisiblePasswords({
@@ -266,7 +266,7 @@ export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser |
                           <button
                             onClick={() => {
                               setEditingUserId(user.id);
-                              setNewPasswordValue((user as any).password || '1234');
+                              setNewPasswordValue((user as any).password || '123456');
                             }}
                             className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-black uppercase text-blue-600 hover:bg-blue-50 border border-blue-100 rounded-lg transition-all"
                             title="Edit Password"
