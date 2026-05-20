@@ -46,8 +46,11 @@ export interface Supplier {
 export interface SystemUser {
   id: string;
   username: string;
+  uniqueUsername?: string;
   name: string;
   role: 'owner' | 'admin' | 'cashier';
+  isSupreme?: boolean;
+  storeId?: string | null;
   createdAt?: any;
 }
 

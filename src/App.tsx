@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { cn, formatCurrency } from './lib/utils';
 import { startOfDay } from 'date-fns';
-import { useCollection } from './lib/db';
+import { useCollection, setGlobalStoreId } from './lib/db';
 
 import { LoginView } from './components/LoginView';
 import { DashboardView } from './components/DashboardView';
@@ -47,8 +47,12 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [systemUser, setSystemUser] = useState<SystemUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [selectedStoreId, setSelectedStoreId] = useState<string>('');
 
   const { data: sales } = useCollection<any>('sales');
+  const { data: allUsers } = useCollection<SystemUser>('users');
+  const allStores = allUsers.filter(u => u.role === 'owner');
+
   const [dailyTarget, setDailyTarget] = useState(() => Number(localStorage.getItem('dailyTarget')) || 5000);
 
   useEffect(() => {
@@ -72,34 +76,61 @@ export default function App() {
       if (authUser) {
         const userDocRef = doc(db, 'users', authUser.uid);
         const userDoc = await getDoc(userDocRef);
+        let sUser: SystemUser | null = null;
         if (userDoc.exists()) {
-          setSystemUser({ id: userDoc.id, ...userDoc.data() } as SystemUser);
+          sUser = { id: userDoc.id, ...userDoc.data() } as SystemUser;
         } else {
-          // If user exists in Auth but not in Firestore, create a default 'owner' profile
-          // This ensures the first user can actually manage the app
+          // If user exists in Auth but not in Firestore, create a default profile
+          const isSupreme = authUser.email === 'CalangLoy@gmail.com' || authUser.providerData.some(p => p.providerId === 'google.com');
           const defaultUser = {
-            name: authUser.displayName || 'Store Owner',
+            name: authUser.displayName || (isSupreme ? 'Developer Admin' : 'Store Owner'),
             username: authUser.email ? authUser.email.split('@')[0] : 'owner',
             role: 'owner' as const,
+            isSupreme,
           };
           try {
             await setDoc(userDocRef, {
               ...defaultUser,
               updatedAt: serverTimestamp()
             });
-            setSystemUser({ id: authUser.uid, ...defaultUser } as SystemUser);
+            sUser = { id: authUser.uid, ...defaultUser } as SystemUser;
           } catch (err) {
             console.error("Failed to auto-profile user", err);
-            setSystemUser(null);
           }
         }
+
+        // Maintain supreme developer status
+        const hasGoogleProvider = authUser.providerData.some(p => p.providerId === 'google.com') || authUser.email === 'CalangLoy@gmail.com';
+        if (hasGoogleProvider && sUser) {
+          sUser.isSupreme = true;
+        }
+        setSystemUser(sUser);
       } else {
         setSystemUser(null);
+        setGlobalStoreId(null);
       }
       setAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (systemUser) {
+      if (systemUser.isSupreme) {
+        if (allStores.length > 0 && !selectedStoreId) {
+          setSelectedStoreId(allStores[0].id);
+          setGlobalStoreId(allStores[0].id);
+        } else if (selectedStoreId) {
+          setGlobalStoreId(selectedStoreId);
+        }
+      } else {
+        const resolvedStoreId = systemUser.storeId || (systemUser.role === 'owner' ? systemUser.id : null);
+        setGlobalStoreId(resolvedStoreId);
+      }
+    } else {
+      setGlobalStoreId(null);
+    }
+  }, [systemUser, allStores.length, selectedStoreId]);
 
   const handleLogout = async () => {
     try {
@@ -259,9 +290,25 @@ export default function App() {
               {navItems.find(i => i.id === activeView)?.label || activeView}
             </h2>
             <div className="flex items-center gap-6">
+              {systemUser?.isSupreme && allStores.length > 0 && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-1.5 rounded-xl">
+                  <span className="text-[10px] font-black uppercase text-blue-600 tracking-wider">Scoping Store:</span>
+                  <select
+                    value={selectedStoreId}
+                    onChange={(e) => setSelectedStoreId(e.target.value)}
+                    className="bg-transparent border-none text-xs font-black text-blue-800 uppercase focus:ring-0 p-0 cursor-pointer outline-none"
+                  >
+                    {allStores.map(store => (
+                      <option key={store.id} value={store.id}>{store.name} (@{store.username})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold text-slate-900 staff-name">{systemUser?.name || 'Maria Santos'}</p>
-                <p className="text-xs text-slate-500 uppercase font-bold tracking-widest text-blue-500">{systemUser?.role || 'Store Manager'}</p>
+                <p className="text-xs text-slate-500 uppercase font-bold tracking-widest text-blue-500">
+                  {systemUser?.isSupreme ? 'System Administrator' : (systemUser?.role || 'Store Manager')}
+                </p>
               </div>
               <div className="w-10 h-10 bg-slate-100 rounded-full border-2 border-white shadow-sm flex items-center justify-center font-bold text-slate-400 uppercase">
                 {systemUser?.name?.[0] || 'M'}
@@ -290,7 +337,7 @@ export default function App() {
               {activeView === 'activity' && <AuditLogView />}
               {activeView === 'suppliers' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <SuppliersView user={systemUser} />}
               {activeView === 'settings' && (systemUser?.role === 'owner' || systemUser?.role === 'admin') && <SettingsView user={systemUser} />}
-              {activeView === 'admin' && systemUser?.role === 'owner' && <AdminManagementView />}
+              {activeView === 'admin' && systemUser?.role === 'owner' && <AdminManagementView currentUser={systemUser} />}
               {/* Fallback for unauthorized access */}
               {((activeView === 'sales' || activeView === 'suppliers' || activeView === 'settings') && 
                 systemUser?.role === 'cashier') || 

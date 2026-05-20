@@ -18,35 +18,47 @@ import { db, createInternalAuthUser } from '../lib/firebase';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
-export const AdminManagementView = () => {
+export const AdminManagementView = ({ currentUser }: { currentUser: SystemUser | null }) => {
   const { data: users, loading } = useCollection<SystemUser>('users', orderBy('name'));
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [newUserData, setNewUserData] = useState({
     name: '',
     username: '',
-    role: 'cashier' as const
+    role: 'cashier' as 'cashier' | 'admin' | 'owner'
   });
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserData.username) return;
+    if (!newUserData.username || !currentUser) return;
     try {
-      // 1. Create Auth user first (with fixed password: Admin1234)
       const sanitizedUsername = newUserData.username.toLowerCase().trim().replace(/\s/g, '');
-      const uid = await createInternalAuthUser(sanitizedUsername, 'Admin1234');
+      let uniqueUsername = sanitizedUsername;
+      
+      const roleIsOwner = newUserData.role === 'owner';
+      
+      if (!roleIsOwner) {
+        // Scoped to the current store to avoid global namespace conflicts
+        const storeIdContext = currentUser.storeId || currentUser.id;
+        uniqueUsername = `${sanitizedUsername}_${storeIdContext}`;
+      }
+
+      // 1. Create Auth user first (with fixed password: Admin1234)
+      const uid = await createInternalAuthUser(uniqueUsername, 'Admin1234');
       
       // 2. Create Firestore record with the SAME id
       await setDoc(doc(db, 'users', uid), {
         name: newUserData.name,
         username: sanitizedUsername,
+        uniqueUsername: uniqueUsername,
         role: newUserData.role,
+        storeId: roleIsOwner ? uid : (currentUser.storeId || currentUser.id),
         createdAt: serverTimestamp()
       });
 
       setIsAddingUser(false);
       setNewUserData({ name: '', username: '', role: 'cashier' });
-      alert(`Account created! Username: ${sanitizedUsername} | Pass: Admin1234`);
+      alert(`Account created successfully! Login ID: ${sanitizedUsername} | Password: Admin1234`);
     } catch (error: any) {
       console.error(error);
       alert(error.message || "Failed to add user.");
@@ -71,10 +83,19 @@ export const AdminManagementView = () => {
     }
   };
 
-  const filtered = users.filter(u => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.username.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const resolvedStoreId = currentUser?.storeId || currentUser?.id;
+  const filtered = users.filter(u => {
+    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          u.username.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+
+    // System Developer / Administrator (isSupreme) can see all users globally
+    if (currentUser?.isSupreme) return true;
+
+    // Ordinary store manager/owner should only view members under their store scope
+    const userStoreId = u.storeId || (u.role === 'owner' ? u.id : null);
+    return userStoreId === resolvedStoreId;
+  });
 
   if (loading) {
     return (
@@ -141,14 +162,17 @@ export const AdminManagementView = () => {
                       <select 
                         value={user.role}
                         onChange={(e) => updateRole(user.id, e.target.value)}
+                        disabled={user.role === 'owner' && !currentUser?.isSupreme}
                         className={cn(
                           "text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border-none focus:ring-2 focus:ring-blue-500",
                           user.role === 'owner' ? "bg-amber-100 text-amber-600" :
                           user.role === 'admin' ? "bg-blue-100 text-blue-600" :
-                          "bg-slate-100 text-slate-600"
+                          "bg-slate-100 text-slate-600",
+                          (user.role === 'owner' && !currentUser?.isSupreme) && "opacity-85 cursor-not-allowed"
                         )}
                       >
-                        <option value="owner">Owner</option>
+                        {currentUser?.isSupreme && <option value="owner">Owner</option>}
+                        {(user.role === 'owner' && !currentUser?.isSupreme) && <option value="owner">Owner</option>}
                         <option value="admin">Admin</option>
                         <option value="cashier">Cashier</option>
                       </select>
@@ -243,7 +267,7 @@ export const AdminManagementView = () => {
                 >
                   <option value="cashier">Cashier</option>
                   <option value="admin">Admin</option>
-                  <option value="owner">Owner</option>
+                  {currentUser?.isSupreme && <option value="owner">Owner (New Register Shop)</option>}
                 </select>
               </div>
               <div className="pt-4 flex gap-3">
